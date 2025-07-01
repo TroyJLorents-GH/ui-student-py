@@ -35,7 +35,7 @@ export default function MasterDashboard() {
   const [rows, setRows] = useState([]);
   const [error, setError] = useState('');
 
-  // Modal State
+  // Modal 
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
   const [reviewStatus, setReviewStatus] = useState({
@@ -47,12 +47,12 @@ export default function MasterDashboard() {
 
   const handleOpenModal = (row) => {
     setSelectedRow(row);
-    // TODO: fetch existing status for row if needed
+    // get existing status
     setReviewStatus({
-      I9_Sent: row.I9_Sent ?? false,
-      SSN_Sent: row.SSN_Sent ?? false,
-      Offer_Sent: row.Offer_Sent ?? false,
-      Offer_Signed: row.Offer_Signed ?? false,
+      I9_Sent: row.i9_Sent ?? false,
+      SSN_Sent: row.ssn_Sent ?? false,
+      Offer_Sent: row.offer_Sent ?? false,
+      Offer_Signed: row.offer_Signed ?? false,
     });
     setModalOpen(true);
   };
@@ -113,6 +113,8 @@ export default function MasterDashboard() {
     { field: 'location', headerName: 'Location', headerAlign: 'center', width: 120 },
     { field: 'campus', headerName: 'Campus', headerAlign: 'center', width: 110 },
     { field: 'classNum', headerName: 'Class #', headerAlign: 'center', width: 110 },
+    { field: 'cum_gpa', headerName: 'Cum GPA', headerAlign: 'center', width: 110 },
+    { field: 'cur_gpa', headerName: 'Cur GPA', headerAlign: 'center', width: 110 },
     { field: 'costCenterKey', headerName: 'Cost Center', headerAlign: 'center', width: 160 },
     { field: 'compensation', headerName: 'Compensation', headerAlign: 'center', width: 140, ...usdPrice },
     {
@@ -155,13 +157,15 @@ export default function MasterDashboard() {
           location: r.Location,
           campus: r.Campus,
           classNum: r.ClassNum,
+          cum_gpa: r.cum_gpa,
+          cur_gpa: r.cur_gpa,
           costCenterKey: r.CostCenterKey,
           compensation: r.Compensation,
           position_Number: r.Position_Number || '',
-          I9_Sent: r.I9_Sent,
-          SSN_Sent: r.SSN_Sent,
-          Offer_Sent: r.Offer_Sent,
-          Offer_Signed: r.Offer_Signed
+          i9_Sent: r.I9_Sent,
+          ssn_Sent: r.SSN_Sent,
+          offer_Sent: r.Offer_Sent,
+          offer_Signed: r.Offer_Signed
         }));
         setRows(mapped);
       })
@@ -177,7 +181,7 @@ export default function MasterDashboard() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          Position_Number: newRow.Position_Number,
+          Position_Number: newRow.position_Number,
           I9_Sent: newRow.i9_Sent ?? false,
           SSN_Sent: newRow.ssn_Sent ?? false,
           Offer_Sent: newRow.offer_Sent ?? false,
@@ -187,7 +191,7 @@ export default function MasterDashboard() {
   
       if (!response.ok) throw new Error('Failed to update position number');
   
-      return newRow; // ✅ let DataGrid know update succeeded
+      return newRow; // DG knows to update
     } catch (error) {
       console.error('Update failed:', error);
       throw error;
@@ -233,7 +237,7 @@ export default function MasterDashboard() {
         />
       </Paper>
 
-      {/* ✅ Modal for Review */}
+      {/* Modal Review */}
       <Dialog open={modalOpen} onClose={handleCloseModal} maxWidth="sm" fullWidth>
         <DialogTitle>Review Assignment: {selectedRow?.studentName}</DialogTitle>
         <DialogContent>

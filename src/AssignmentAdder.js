@@ -28,11 +28,40 @@ const AssignmentAdder = ({ studentData, classDetails, onReset }) => {
     const h = parseInt(hours, 10);
     if (isNaN(h)) return 0;
     if (pos === "TA") {
+      if (h === 5 && edu === "MS" && fellow === "No") return 6636;
+      if (h === 5 && edu === "PHD" && fellow === "No") return 7250;
+      if (h === 5 && edu === "MS" && fellow === "Yes") return 6936;
+      if (h === 5 && edu === "PHD" && fellow === "Yes") return 7550;
       if (h === 10 && edu === "MS" && fellow === "No") return 6636;
       if (h === 10 && edu === "PHD" && fellow === "No") return 7250;
-      if (h === 20 && (edu === "MS" || edu === "Masters") && fellow === "No") return 13272;
+      if (h === 10 && edu === "MS" && fellow === "Yes") return 6936;
+      if (h === 10 && edu === "PHD" && fellow === "Yes") return 7550;
+      if (h === 15 && edu === "MS" && fellow === "No") return 7250;
+      if (h === 15 && edu === "PHD" && fellow === "No") return 7650;
+      if (h === 15 && edu === "MS" && fellow === "Yes") return 7350;
+      if (h === 15 && edu === "PHD" && fellow === "Yes") return 7950;
+      if (h === 20 && edu === "MS" && fellow === "No") return 13272;
       if (h === 20 && edu === "PHD" && fellow === "No") return 14500;
       if (h === 20 && edu === "PHD" && fellow === "Yes") return 13461.24;
+      if (h === 20 && edu === "MS" && fellow === "Yes") return 13572;
+    }
+    if (pos === "Grader") {
+      if (h === 5 && edu === "MS" && fellow === "No") return 6636;
+      if (h === 5 && edu === "PHD" && fellow === "No") return 7250;
+      if (h === 5 && edu === "MS" && fellow === "Yes") return 6936;
+      if (h === 5 && edu === "PHD" && fellow === "Yes") return 7550;
+      if (h === 10 && edu === "MS" && fellow === "No") return 6636;
+      if (h === 10 && edu === "PHD" && fellow === "No") return 7250;
+      if (h === 10 && edu === "MS" && fellow === "Yes") return 6936;
+      if (h === 10 && edu === "PHD" && fellow === "Yes") return 7550;
+      if (h === 15 && edu === "MS" && fellow === "No") return 7250;
+      if (h === 15 && edu === "PHD" && fellow === "No") return 7650;
+      if (h === 15 && edu === "MS" && fellow === "Yes") return 7350;
+      if (h === 15 && edu === "PHD" && fellow === "Yes") return 7950;
+      if (h === 20 && edu === "MS" && fellow === "No") return 13272;
+      if (h === 20 && edu === "PHD" && fellow === "No") return 14500;
+      if (h === 20 && edu === "PHD" && fellow === "Yes") return 13461.24;
+      if (h === 20 && edu === "MS" && fellow === "Yes") return 13572;
     }
     if (pos === "TA (GSA) 1 credit") {
       if (h === 10 && edu === "PHD" && fellow === "No") return 7552.5;
@@ -80,7 +109,9 @@ const AssignmentAdder = ({ studentData, classDetails, onReset }) => {
       Location: classDetails?.Location || '',
       Campus: classDetails?.Campus || '',
       AcadCareer: classDetails?.AcadCareer || '',
-      CostCenterKey: costCenter
+      CostCenterKey: costCenter,
+      cum_gpa: +(parseFloat(studentData?.Cumulative_GPA)?.toFixed(2)) || 0,
+      cur_gpa: +(parseFloat(studentData?.Current_GPA)?.toFixed(2)) || 0
     };
 
     try {
@@ -109,8 +140,8 @@ const AssignmentAdder = ({ studentData, classDetails, onReset }) => {
     if (typeof onReset === 'function') onReset(); // call back to App.js
   };
 
-  const studentName = studentData ? `${studentData.first_Name} ${studentData.last_Name}` : '';
-  const classLabel = classDetails ? `${classDetails.subject} ${classDetails.catalogNum}` : '';
+  const studentName = studentData ? `${studentData.First_Name} ${studentData.Last_Name}` : '';
+  const classLabel = classDetails ? `${classDetails.Subject} ${classDetails.CatalogNum}` : '';
   const acknowledgeText = `I agree to hiring ${studentName} for ${position} at $${compensation.toLocaleString()} for ${classLabel}`;
 
   return (
@@ -248,13 +279,42 @@ const AssignmentAdder = ({ studentData, classDetails, onReset }) => {
         </Grid>
 
         <Grid item xs={12} sm={4}>
-          <FormControl fullWidth sx={{ minWidth: 250 }} required>
-            <InputLabel>Fulton Fellow</InputLabel>
-            <Select value={fultonFellow} onChange={(e) => setFultonFellow(e.target.value)} label="Fulton Fellow">
-              <MenuItem value="Yes">Yes</MenuItem>
-              <MenuItem value="No">No</MenuItem>
-            </Select>
-          </FormControl>
+          <Box>
+            <FormControl fullWidth sx={{ minWidth: 250 }} required>
+              <InputLabel>Fulton Fellow</InputLabel>
+              <Select
+                value={fultonFellow}
+                onChange={(e) => setFultonFellow(e.target.value)}
+                label="Fulton Fellow"
+              >
+                <MenuItem value="Yes">Yes</MenuItem>
+                <MenuItem value="No">No</MenuItem>
+              </Select>
+            </FormControl>
+
+            {fultonFellow === "Yes" && (
+              <Grid container spacing={5} sx={{ mt: 1 }}>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Cur GPA"
+                    value={studentData?.Current_GPA || ''}
+                    disabled
+                    variant="filled"
+                    sx={{ width: 100 }} 
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Cum GPA"
+                    value={studentData?.Cumulative_GPA || ''}
+                    variant="filled"
+                    sx={{ width: 100 }}
+                    disabled
+                  />
+                </Grid>
+              </Grid>
+            )}
+          </Box>
         </Grid>
       </Grid>
 
@@ -291,7 +351,7 @@ const AssignmentAdder = ({ studentData, classDetails, onReset }) => {
         </Alert>
       </Snackbar>
 
-      {/* ✅ Clean Confirmation Modal */}
+      
       <Dialog open={modalOpen} onClose={handleModalClose} fullWidth maxWidth="sm">
         <DialogTitle>Assignment Confirmation - Print For Own Records</DialogTitle>
         <DialogContent dividers>

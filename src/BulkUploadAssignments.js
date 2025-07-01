@@ -17,9 +17,13 @@ const columnMapping = {
   'EducationLevel': 'EducationLevel',
   'Subject': 'Subject',
   'CatalogNum': 'CatalogNum',
+  'ClassNum': 'ClassNum',
   'InstructorFirstName': 'InstructorFirstName',
   'InstructorLastName': 'InstructorLastName',
-  'ClassSession': 'ClassSession'
+  'ClassSession': 'ClassSession',
+  'Location': 'Location',
+  'Campus': 'Campus',
+  'AcadCareer': 'AcadCareer'
 };
 
 const baseUrl = process.env.REACT_APP_API_URL;
@@ -80,14 +84,26 @@ const BulkUploadAssignments = () => {
 
   return (
     <Paper elevation={3} sx={{ padding: 3 }}>
-      <Typography variant="h5" gutterBottom>Bulk Upload Student Assignments</Typography>
+    <Typography variant="h5" gutterBottom>
+      Bulk Upload Student Assignments
+    </Typography>
 
-      <Box sx={{ mb: 2 }}>
-        <Button variant="contained" component="label">
-          Upload Excel (.xlsx)
-          <input type="file" hidden accept=".xlsx,.csv" onChange={handleFile} />
-        </Button>
-      </Box>
+    {/* Download and Upload side-by-side */}
+    <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
+      <Button
+        variant="outlined"
+        component="a"
+        href={`${process.env.REACT_APP_API_URL}/api/StudentClassAssignment/template`}
+        download="BulkUploadTemplate.csv"
+      >
+        Download CSV Template
+      </Button>
+
+      <Button variant="contained" component="label">
+        Upload .CSV (.csv)
+        <input type="file" hidden accept=".xlsx,.csv" onChange={handleFile} />
+      </Button>
+    </Box>
 
       {rows.length > 0 && (
         <>
