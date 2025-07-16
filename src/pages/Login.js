@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const ALLOWED = ['troy.lorents@asu.edu','joe.caudill@asu.edu', 't@me.com'];
+const ALLOWED = ['t@me.com'];
 const PW = 'test123';
 
 export default function Login({ onLogin }) {

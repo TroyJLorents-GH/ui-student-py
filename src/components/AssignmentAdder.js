@@ -4,7 +4,7 @@ import {
   Checkbox, FormControlLabel, Button, Snackbar, Alert, Grid, Divider, Paper,
   Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
-import { computeCostCenterKey } from './costCenterRules';
+import { computeCostCenterKey } from '../utils/costCenterRules';
 
 const baseUrl = process.env.REACT_APP_API_URL;
 
@@ -26,53 +26,49 @@ const AssignmentAdder = ({ studentData, classDetails, onReset }) => {
 
   const calculateComp = (pos, hours, edu, fellow, session) => {
     const h = parseInt(hours, 10);
-    if (isNaN(h)) return 0;
+    const sess = (session + "").toUpperCase();
+  
+    // --- Grader ---
+    if (pos === "Grader" && (edu === "MS" || edu === "PHD") && fellow === "No") {
+      if (h === 5  && (sess === "A" || sess === "B")) return 781;
+      if (h === 5  && sess === "C") return 1562;
+      if (h === 10 && (sess === "A" || sess === "B")) return 1562;
+      if (h === 10 && sess === "C") return 3124;
+      if (h === 15 && (sess === "A" || sess === "B")) return 2343;
+      if (h === 15 && sess === "C") return 4686;
+      if (h === 20 && (sess === "A" || sess === "B")) return 3124;
+      if (h === 20 && sess === "C") return 6248;
+    }
+  
+    // --- TA (GSA) 1 credit ---
+    if (pos === "TA (GSA) 1 credit" && edu === "PHD" && fellow === "No") {
+      if (h === 10) return 7552.5;
+      if (h === 20) return 16825;
+    }
+  
+    // --- TA ---
     if (pos === "TA") {
-      if (h === 5 && edu === "MS" && fellow === "No") return 6636;
-      if (h === 5 && edu === "PHD" && fellow === "No") return 7250;
-      if (h === 5 && edu === "MS" && fellow === "Yes") return 6936;
-      if (h === 5 && edu === "PHD" && fellow === "Yes") return 7550;
+      // Any session for all rules
+      if (h === 20 && edu === "PHD" && fellow === "Yes") return 13461.15;
       if (h === 10 && edu === "MS" && fellow === "No") return 6636;
       if (h === 10 && edu === "PHD" && fellow === "No") return 7250;
-      if (h === 10 && edu === "MS" && fellow === "Yes") return 6936;
-      if (h === 10 && edu === "PHD" && fellow === "Yes") return 7550;
-      if (h === 15 && edu === "MS" && fellow === "No") return 7250;
-      if (h === 15 && edu === "PHD" && fellow === "No") return 7650;
-      if (h === 15 && edu === "MS" && fellow === "Yes") return 7350;
-      if (h === 15 && edu === "PHD" && fellow === "Yes") return 7950;
       if (h === 20 && edu === "MS" && fellow === "No") return 13272;
       if (h === 20 && edu === "PHD" && fellow === "No") return 14500;
-      if (h === 20 && edu === "PHD" && fellow === "Yes") return 13461.24;
-      if (h === 20 && edu === "MS" && fellow === "Yes") return 13572;
     }
-    if (pos === "Grader") {
-      if (h === 5 && edu === "MS" && fellow === "No") return 6636;
-      if (h === 5 && edu === "PHD" && fellow === "No") return 7250;
-      if (h === 5 && edu === "MS" && fellow === "Yes") return 6936;
-      if (h === 5 && edu === "PHD" && fellow === "Yes") return 7550;
-      if (h === 10 && edu === "MS" && fellow === "No") return 6636;
-      if (h === 10 && edu === "PHD" && fellow === "No") return 7250;
-      if (h === 10 && edu === "MS" && fellow === "Yes") return 6936;
-      if (h === 10 && edu === "PHD" && fellow === "Yes") return 7550;
-      if (h === 15 && edu === "MS" && fellow === "No") return 7250;
-      if (h === 15 && edu === "PHD" && fellow === "No") return 7650;
-      if (h === 15 && edu === "MS" && fellow === "Yes") return 7350;
-      if (h === 15 && edu === "PHD" && fellow === "Yes") return 7950;
-      if (h === 20 && edu === "MS" && fellow === "No") return 13272;
-      if (h === 20 && edu === "PHD" && fellow === "No") return 14500;
-      if (h === 20 && edu === "PHD" && fellow === "Yes") return 13461.24;
-      if (h === 20 && edu === "MS" && fellow === "Yes") return 13572;
+  
+    // --- IA ---
+    if (pos === "IA" && (edu === "MS" || edu === "PHD") && fellow === "No") {
+      if (h === 5  && (sess === "A" || sess === "B")) return 1100;
+      if (h === 5  && sess === "C") return 2200;
+      if (h === 10 && (sess === "A" || sess === "B")) return 2200;
+      if (h === 10 && sess === "C") return 4400;
+      if (h === 15 && (sess === "A" || sess === "B")) return 2640;
+      if (h === 15 && sess === "C") return 6600;
+      if (h === 20 && (sess === "A" || sess === "B")) return 4400;
+      if (h === 20 && sess === "C") return 8800;
     }
-    if (pos === "TA (GSA) 1 credit") {
-      if (h === 10 && edu === "PHD" && fellow === "No") return 7552.5;
-      if (h === 20 && edu === "PHD" && fellow === "No") return 16825;
-    }
-    if (pos === "IA") {
-      const base = session === "C" ? 2 : 1;
-      if (["MS", "PHD"].includes(edu)) {
-        return base * 1100 * (h / 5);
-      }
-    }
+  
+    // Fallback if no rules match =
     return 0;
   };
 
@@ -91,6 +87,7 @@ const AssignmentAdder = ({ studentData, classDetails, onReset }) => {
 
     const payload = {
       Student_ID: studentData.Student_ID,
+      ASUrite: studentData.ASUrite,
       Position: position,
       Email: studentData.ASU_Email_Adress,
       First_Name: studentData.First_Name,
@@ -103,6 +100,7 @@ const AssignmentAdder = ({ studentData, classDetails, onReset }) => {
       Term: classDetails?.Term || '',
       InstructorFirstName: classDetails?.InstructorFirstName || '',
       InstructorLastName: classDetails?.InstructorLastName || '',
+      InstructorID: classDetails?.InstructorID || '',
       WeeklyHours: parseInt(weeklyHours, 10),
       FultonFellow: fultonFellow,
       Compensation: compensation,
@@ -140,8 +138,8 @@ const AssignmentAdder = ({ studentData, classDetails, onReset }) => {
     if (typeof onReset === 'function') onReset(); // call back to App.js
   };
 
-  const studentName = studentData ? `${studentData.First_Name} ${studentData.Last_Name}` : '';
-  const classLabel = classDetails ? `${classDetails.Subject} ${classDetails.CatalogNum}` : '';
+  const studentName = studentData ? `${studentData.first_Name} ${studentData.last_Name}` : '';
+  const classLabel = classDetails ? `${classDetails.subject} ${classDetails.catalogNum}` : '';
   const acknowledgeText = `I agree to hiring ${studentName} for ${position} at $${compensation.toLocaleString()} for ${classLabel}`;
 
   return (
@@ -228,7 +226,7 @@ const AssignmentAdder = ({ studentData, classDetails, onReset }) => {
                 value={`${classDetails.Location} - ${classDetails.Campus}`} 
                 InputProps={{ readOnly: true }} 
                 InputLabelProps={{ shrink: true }} 
-                sx={{ width: 200 }} 
+                sx={{ width: 275 }} 
               />
               <TextField 
                 label="Instructor" 
@@ -263,6 +261,7 @@ const AssignmentAdder = ({ studentData, classDetails, onReset }) => {
               <MenuItem value="TA">TA</MenuItem>
               <MenuItem value="TA (GSA) 1 credit">TA (GSA) 1 credit</MenuItem>
               <MenuItem value="IA">IA</MenuItem>
+              {/* <MenuItem value="IOR">IOR</MenuItem> */}
             </Select>
           </FormControl>
         </Grid>
@@ -281,7 +280,7 @@ const AssignmentAdder = ({ studentData, classDetails, onReset }) => {
         <Grid item xs={12} sm={4}>
           <Box>
             <FormControl fullWidth sx={{ minWidth: 250 }} required>
-              <InputLabel>Fulton Fellow</InputLabel>
+              <InputLabel>Fulton Scholar</InputLabel>
               <Select
                 value={fultonFellow}
                 onChange={(e) => setFultonFellow(e.target.value)}
@@ -327,10 +326,20 @@ const AssignmentAdder = ({ studentData, classDetails, onReset }) => {
 
       <Grid container spacing={2} sx={{ mt: 2 }}>
         <Grid item xs={12} sm={6}>
-          <TextField label="Compensation" value={`$${compensation.toLocaleString()}`} disabled InputLabelProps={{ shrink: true }} fullWidth />
+          <TextField 
+           label="Compensation"
+           value={`$${compensation.toLocaleString()}`} 
+           disabled 
+           InputLabelProps={{ shrink: true }} 
+           fullWidth />
         </Grid>
         <Grid item xs={12} sm={6}>
-          <TextField label="Cost Center Key" value={costCenter} disabled InputLabelProps={{ shrink: true }} fullWidth />
+          <TextField
+           label="Cost Center Key"
+           value={costCenter} 
+           disabled 
+           InputLabelProps={{ shrink: true }} 
+           fullWidth />
         </Grid>
       </Grid>
 
@@ -351,7 +360,7 @@ const AssignmentAdder = ({ studentData, classDetails, onReset }) => {
         </Alert>
       </Snackbar>
 
-      
+      {/* ✅ Clean Confirmation Modal */}
       <Dialog open={modalOpen} onClose={handleModalClose} fullWidth maxWidth="sm">
         <DialogTitle>Assignment Confirmation - Print For Own Records</DialogTitle>
         <DialogContent dividers>
@@ -367,7 +376,7 @@ const AssignmentAdder = ({ studentData, classDetails, onReset }) => {
               <Typography><strong>Session:</strong> {assignmentSummary.ClassSession}</Typography>
               <Typography><strong>Instructor:</strong> {assignmentSummary.InstructorFirstName} {assignmentSummary.InstructorLastName}</Typography>
               <Typography><strong>Weekly Hours:</strong> {assignmentSummary.WeeklyHours}</Typography>
-              <Typography><strong>Fulton Fellow:</strong> {assignmentSummary.FultonFellow}</Typography>
+              <Typography><strong>Fulton Scholar:</strong> {assignmentSummary.FultonFellow}</Typography>
               <Typography><strong>Compensation:</strong> ${assignmentSummary.Compensation.toLocaleString()}</Typography>
               <Typography><strong>Cost Center:</strong> {assignmentSummary.CostCenterKey}</Typography>
               
