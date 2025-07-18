@@ -50,7 +50,8 @@ const ManageStudentAssignments = () => {
         classSession: r.ClassSession,
         location: r.Location,
         campus: r.Campus,
-        classNum: r.ClassNum
+        classNum: r.ClassNum,
+        acadCareer: r.AcadCareer
       }));
       setRows(mapped);
     } catch (err) {

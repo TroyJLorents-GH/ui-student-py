@@ -10,20 +10,8 @@ const columnMapping = {
   'Position': 'Position',
   'FultonFellow': 'FultonFellow',
   'WeeklyHours': 'WeeklyHours',
-  'Student_ID': 'Student_ID',
-  'First_Name': 'First_Name',
-  'Last_Name': 'Last_Name',
-  'Email': 'Email',
-  'EducationLevel': 'EducationLevel',
-  'Subject': 'Subject',
-  'CatalogNum': 'CatalogNum',
-  'ClassNum': 'ClassNum',
-  'InstructorFirstName': 'InstructorFirstName',
-  'InstructorLastName': 'InstructorLastName',
-  'ClassSession': 'ClassSession',
-  'Location': 'Location',
-  'Campus': 'Campus',
-  'AcadCareer': 'AcadCareer'
+  'Student_ID (ID number OR ASUrite accepted)': 'Student_ID',
+  'ClassNum': 'ClassNum'
 };
 
 const baseUrl = process.env.REACT_APP_API_URL;
@@ -93,14 +81,14 @@ const BulkUploadAssignments = () => {
       <Button
         variant="outlined"
         component="a"
-        href={`${process.env.REACT_APP_API_URL}/api/StudentClassAssignment/template`}
+        href={`${baseUrl}/api/StudentClassAssignment/template`}
         download="BulkUploadTemplate.csv"
       >
         Download CSV Template
       </Button>
 
       <Button variant="contained" component="label">
-        Upload .CSV (.csv)
+        Select CSV File
         <input type="file" hidden accept=".xlsx,.csv" onChange={handleFile} />
       </Button>
     </Box>
