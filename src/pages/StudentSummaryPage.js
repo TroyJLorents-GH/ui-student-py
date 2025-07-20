@@ -104,7 +104,7 @@ export default function StudentSummaryPage() {
     if (summary?.assignments) {
       // Map rows with actual Assignment ID as id!
       const mappedRows = summary.assignments.map((a) => ({
-        id: a.AssignmentId || a.Id, // Prefer AssignmentId (backend-exposed), fallback to Id
+        id:a.AssignmentId || a.Id, // Prefer AssignmentId (backend-exposed), fallback to Id
         ...a
       }));
       setRows(mappedRows);
