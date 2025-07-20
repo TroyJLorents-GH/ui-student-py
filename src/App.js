@@ -52,7 +52,7 @@ function App() {
       {/* Sidebar */}
       <div style={{
         width: sidebarWidth,
-        backgroundColor: '#8c1d40',
+        backgroundColor: '#1d498c',
         color: '#fff',
         display: 'flex',
         flexDirection: 'column',
@@ -62,7 +62,7 @@ function App() {
         left: 0,
         height: '100vh',
         zIndex: 99,
-        borderRight: '6px solid #ffba05'
+        borderRight: '6px solid #0f0c03'
       }}>
         <button
           onClick={() => setCollapsed((prev) => !prev)}

@@ -49,19 +49,19 @@ export default function MasterDashboard() {
 
   // DataGrid columns
   const columns = [
-    { field: 'studentName', headerName: 'Student Name', headerAlign: 'center', flex: 1, minWidth: 150, maxWidth: 300 },
+    { field: 'studentName', headerName: 'Student Name', headerAlign: 'center', flex: 1, minWidth: 150, maxWidth: 200 },
     { field: 'student_ID', headerName: 'ASU ID', headerAlign: 'center', width: 140 },
     { field: 'asuRite', headerName: 'ASUrite', headerAlign: 'center', width: 100 },
-    { field: 'position', headerName: 'Position', headerAlign: 'center', width: 150 },
+    { field: 'position', headerName: 'Position', headerAlign: 'center', width: 120 },
     { field: 'weeklyHours', headerName: 'Hours', headerAlign: 'center', width: 80 },
     { field: 'fultonFellow', headerName: 'Fulton Scholar', headerAlign: 'center', width: 120 },
-    { field: 'email', headerName: 'Email', headerAlign: 'center', flex: 1, minWidth: 150, maxWidth: 300, filterable: true },
+    { field: 'email', headerName: 'Email', headerAlign: 'center', flex: 1, minWidth: 100, maxWidth: 200, filterable: true },
     { field: 'educationLevel', headerName: 'Education', headerAlign: 'center', width: 110 },
-    { field: 'instructorName', headerName: 'Instructor Name', headerAlign: 'center', flex: 1, minWidth: 150, maxWidth: 300 },
+    { field: 'instructorName', headerName: 'Instructor Name', headerAlign: 'center', flex: 1, minWidth: 100, maxWidth: 200 },
     { field: 'subject', headerName: 'Subject', headerAlign: 'center', width: 100 },
     { field: 'catalogNum', headerName: 'Catalog #', headerAlign: 'center', width: 100, type: 'number' },
     { field: 'classSession', headerName: 'Session', headerAlign: 'center', width: 100 },
-    { field: 'location', headerName: 'Location', headerAlign: 'center', width: 120 },
+    // { field: 'location', headerName: 'Location', headerAlign: 'center', width: 120 },
     { field: 'campus', headerName: 'Campus', headerAlign: 'center', width: 110 },
     { field: 'classNum', headerName: 'Class #', headerAlign: 'center', width: 110 },
     { field: 'cum_gpa', headerName: 'Cum GPA', headerAlign: 'center', width: 90 },
@@ -82,7 +82,7 @@ export default function MasterDashboard() {
       ),
     },
     { field: 'position_Number', headerName: 'Position Number', headerAlign: 'center', width: 140, editable: true},
-    { field: 'createdAt', headerName: 'Date Created', headerAlign: 'center', width: 170 }
+    { field: 'createdAt', headerName: 'Date Created', headerAlign: 'center', width: 150 }
   ];
 
   // Handle opening the Review modal
@@ -195,7 +195,7 @@ export default function MasterDashboard() {
           subject: r.Subject,
           catalogNum: r.CatalogNum,
           classSession: r.ClassSession,
-          location: r.Location,
+          // location: r.Location,
           campus: r.Campus,
           classNum: r.ClassNum,
           cum_gpa: r.cum_gpa,
@@ -222,7 +222,7 @@ export default function MasterDashboard() {
   // Render
   if (error) {
     return (
-      <Paper style={{ padding: 16, margin: 20 }}>
+      <Paper style={{ padding: 15, margin: 20 }}>
         <Typography color="error">Error: {error}</Typography>
       </Paper>
     );
@@ -230,7 +230,7 @@ export default function MasterDashboard() {
 
   return (
     <>
-      <Paper elevation={0} style={{ height: 'fit-content', width: '99%', padding: 10 }}>
+      <div style={{ height: 'fit-content', width: '100%' }}>
         <Typography variant="h5" gutterBottom>
           Master Dashboard
         </Typography>
@@ -251,9 +251,8 @@ export default function MasterDashboard() {
           showToolbar
           headerFilters
           processRowUpdate={handleRowUpdate}
-          autoHeight
         />
-      </Paper>
+      </div>
 
       {/* Modal Review */}
       <Dialog open={modalOpen} onClose={handleCloseModal} maxWidth="sm" fullWidth>
