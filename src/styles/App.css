@@ -36,3 +36,8 @@
     transform: rotate(360deg);
   }
 }
+
+.highlight-cell {
+  background-color: #e2b82c !important; /* pale yellow */
+  transition: background 10.7s;
+}

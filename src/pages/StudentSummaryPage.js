@@ -13,17 +13,17 @@ import DeleteIcon from "@mui/icons-material/DeleteOutlined";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Close";
 
-// --- DataGridPro columns only Position, WeeklyHours, ClassNum are editable
+// ---- DATA GRID COLUMNS (use camelCase for field names!) ----
 const columns = [
   { field: "id", headerName: "ID", width: 70 }, // Real DB assignment Id
-  { field: "Position", headerName: "Position", width: 120, editable: true },
-  { field: "WeeklyHours", headerName: "Hours", width: 85, type: "number", editable: true },
-  { field: "ClassSession", headerName: "Session", width: 95 },
-  { field: "Subject", headerName: "Subject", width: 90 },
-  { field: "CatalogNum", headerName: "Catalog #", width: 100 },
-  { field: "ClassNum", headerName: "Class #", width: 90, editable: true },
-  { field: "AcadCareer", headerName: "Acad Career", width: 120 },
-  { field: "InstructorName", headerName: "Instructor", width: 180 },
+  { field: "position", headerName: "Position", width: 120, editable: true },
+  { field: "weeklyHours", headerName: "Hours", width: 85, editable: true, type: "singleSelect", valueOptions: [5, 10, 15, 20], },
+  { field: "classSession", headerName: "Session", width: 95, disabled: true },
+  { field: "subject", headerName: "Subject", width: 90, disabled: true },
+  { field: "catalogNum", headerName: "Catalog #", width: 100, disabled: true },
+  { field: "classNum", headerName: "Class #", width: 90, editable: true },
+  { field: "acadCareer", headerName: "Acad Career", width: 120, disabled: true },
+  { field: "instructorName", headerName: "Instructor", width: 180, disabled: true },
   {
     field: "actions",
     type: "actions",
@@ -53,29 +53,30 @@ const columns = [
   }
 ];
 
-// --- Assignment Detail Panel
+// ---- Detail panel component
 function AssignmentDetailPanel({ row }) {
   return (
     <Box sx={{ p: 2, minHeight: 120 }}>
-      <Typography variant="subtitle1" gutterBottom>
+      <Typography variant="h6" gutterBottom>
         Assignment Detail
       </Typography>
-      <Stack direction="row" gap={6} flexWrap="wrap" mb={2}>
+      <Stack direction="row" divider={<Divider orientation="vertical" flexItem />} gap={6} flexWrap="wrap" mb={2}>
         <Box>
-          <Typography variant="body2"><b>Position:</b> {row.Position}</Typography>
-          <Typography variant="body2"><b>Weekly Hours:</b> {row.WeeklyHours}</Typography>
+          <Typography variant="body2"><b>Position:</b> {row.position}</Typography>
+          <Typography variant="body2"><b>Weekly Hours:</b> {row.weeklyHours}</Typography>
         </Box>
         <Box>
-          <Typography variant="body2"><b>Class #:</b> {row.ClassNum}</Typography>
-          <Typography variant="body2"><b>Session:</b> {row.ClassSession}</Typography>
+          <Typography variant="body2"><b>Class #:</b> {row.classNum}</Typography>
+          <Typography variant="body2"><b>Session:</b> {row.classSession}</Typography>
         </Box>
         <Box>
-          <Typography variant="body2"><b>Subject:</b> {row.Subject}</Typography>
-          <Typography variant="body2"><b>Instructor:</b> {row.InstructorName}</Typography>
+          <Typography variant="body2"><b>Subject:</b> {row.subject}</Typography>
+          <Typography variant="body2"><b>Catalog #:</b> {row.catalogNum}</Typography>
+          
         </Box>
         <Box>
-          <Typography variant="body2"><b>Catalog #:</b> {row.CatalogNum}</Typography>
-          <Typography variant="body2"><b>Acad Career:</b> {row.AcadCareer}</Typography>
+          <Typography variant="body2"><b>Instructor:</b> {row.instructorName}</Typography>
+          <Typography variant="body2"><b>Acad Career:</b> {row.acadCareer}</Typography>
         </Box>
       </Stack>
       <Divider sx={{ my: 1 }} />
@@ -102,10 +103,16 @@ export default function StudentSummaryPage() {
   // --- Pull assignments from summary into editable state ---
   useEffect(() => {
     if (summary?.assignments) {
-      // Map rows with actual Assignment ID as id!
       const mappedRows = summary.assignments.map((a) => ({
-        id:a.AssignmentId || a.Id, // Prefer AssignmentId (backend-exposed), fallback to Id
-        ...a
+        id: a.AssignmentId || a.Id,
+        position: a.Position,
+        weeklyHours: a.WeeklyHours,
+        classSession: a.ClassSession,
+        subject: a.Subject,
+        catalogNum: a.CatalogNum,
+        classNum: a.ClassNum,
+        acadCareer: a.AcadCareer,
+        instructorName: a.InstructorName,
       }));
       setRows(mappedRows);
       originalRowsRef.current = mappedRows;
@@ -164,18 +171,17 @@ export default function StudentSummaryPage() {
   // --- Handle row changes locally ---
   const processRowUpdate = async (newRow, oldRow) => {
     let updatedRow = { ...oldRow, ...newRow };
-    // If ClassNum changed, update dependent fields from backend
-    if (newRow.ClassNum !== oldRow.ClassNum) {
+    if (newRow.classNum !== oldRow.classNum) {
       try {
-        const term = "2254"; // Or pull dynamically if needed
-        const res = await fetch(`/api/class/details/${newRow.ClassNum}?term=${term}`);
+        const term = "2254";
+        const res = await fetch(`/api/class/details/${newRow.classNum}?term=${term}`);
         if (!res.ok) throw new Error("Class not found");
         const classInfo = await res.json();
-        updatedRow.Subject = classInfo.Subject;
-        updatedRow.CatalogNum = classInfo.CatalogNum;
-        updatedRow.AcadCareer = classInfo.AcadCareer;
-        updatedRow.ClassSession = classInfo.Session;
-        updatedRow.InstructorName = `${classInfo.InstructorFirstName} ${classInfo.InstructorLastName}`;
+        updatedRow.subject = classInfo.Subject;
+        updatedRow.catalogNum = classInfo.CatalogNum;
+        updatedRow.acadCareer = classInfo.AcadCareer;
+        updatedRow.classSession = classInfo.Session;
+        updatedRow.instructorName = `${classInfo.InstructorFirstName} ${classInfo.InstructorLastName}`;
       } catch (e) {
         setSnackbar({ open: true, message: `Class lookup failed: ${e.message}`, severity: "error" });
       }
@@ -191,16 +197,14 @@ export default function StudentSummaryPage() {
     try {
       // 1. Find edited rows: changed position/hours/classnum (ignore unedited)
       const editedRows = rows.filter(row => row._edited).map(row => ({
-        id: row.id, // Must be backend AssignmentId/Id
-        Position: row.Position,
-        WeeklyHours: row.WeeklyHours,
-        ClassNum: row.ClassNum
+        id: row.id,
+        Position: row.position,
+        WeeklyHours: row.weeklyHours,
+        ClassNum: row.classNum
       }));
 
-      // 2. Deletions: send just the AssignmentId (row.id)
       const deletes = [...pendingDeletes.current];
 
-      // 3. Compose API payload and send
       const response = await fetch(`/api/StudentClassAssignment/bulk-edit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -212,10 +216,28 @@ export default function StudentSummaryPage() {
       });
 
       if (!response.ok) throw new Error("Failed to save changes");
+      const data = await response.json();
+
+      // Map backend fields to frontend DataGrid fields
+      const backendToFrontendField = {
+        WeeklyHours: "weeklyHours",
+        Position: "position",
+        ClassNum: "classNum"
+      };
+
+      if (data.updated) {
+        localStorage.setItem(
+          'recentlyEditedAssignments',
+          JSON.stringify(data.updated.map(r => ({
+            id: r.Id,
+            changed_fields: r.changed_fields.map(f => backendToFrontendField[f] || f)
+          })))
+        );
+      }
 
       setSnackbar({ open: true, message: 'Changes saved successfully!', severity: 'success' });
       setEdited(false);
-      handleLookup(); // Optionally, refetch for freshness
+      handleLookup();
     } catch (e) {
       setSnackbar({ open: true, message: e.message, severity: 'error' });
     }
@@ -296,6 +318,7 @@ export default function StudentSummaryPage() {
       {summary && (
         <Box sx={{ height: 500, width: "100%" }}>
           <DataGridPro
+            pagination
             rows={rows}
             columns={columns.map(col =>
               col.field === "actions"

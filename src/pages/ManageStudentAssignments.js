@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Paper, Typography, TextField, Button, Grid, Snackbar, Alert } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import { DataGridPro } from '@mui/x-data-grid-pro';
 
 const baseUrl = process.env.REACT_APP_API_URL;
 
 const columns = [
-  { field: 'studentName', headerName: 'Student Name', headerAlign: 'center', flex: 1, minWidth: 150, maxWidth: 300 },
+  { field: 'studentName', headerName: 'Student Name', headerAlign: 'center', flex: 1, minWidth: 150, maxWidth: 200 },
   { field: 'student_ID', headerName: 'ASU ID', headerAlign: 'center', width: 140 },
+  { field: 'asuRite', headerName: 'ASUrite', headerAlign: 'center', width: 100 },
   { field: 'position', headerName: 'Position', headerAlign: 'center', width: 150 },
   { field: 'weeklyHours', headerName: 'Hours', headerAlign: 'center', width: 80, editable: true }, // Editable!
   { field: 'fultonFellow', headerName: 'Fulton Fellow', headerAlign: 'center', width: 120 },
@@ -39,6 +40,7 @@ const ManageStudentAssignments = () => {
         id: r.Id,
         studentName: `${r.First_Name ?? ''} ${r.Last_Name ?? ''}`,
         student_ID: r.Student_ID,
+        asuRite: r.ASUrite,
         position: r.Position,
         weeklyHours: r.WeeklyHours,
         fultonFellow: r.FultonFellow,
@@ -107,7 +109,15 @@ const ManageStudentAssignments = () => {
         </Grid>
       </Grid>
       <div style={{ height: 600, width: '100%' }}>
-        <DataGrid
+        <DataGridPro
+          sx={{
+            '& .MuiDataGrid-cell': { textAlign: 'center' },
+            '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 'bold', fontSize: '1.1em' },
+            '& .highlight-cell': {
+              backgroundColor: '#fff9c4',
+              fontWeight: 600,
+            },
+          }}
           rows={rows}
           columns={columns}
           processRowUpdate={processRowUpdate}
