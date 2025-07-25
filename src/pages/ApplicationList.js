@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+import { DataGridPro } from '@mui/x-data-grid-pro';
 import {
   Paper,
   Typography,
@@ -131,7 +131,7 @@ const ApplicationList = () => {
       )}
 
       <div style={{ height: 'fit-content', width: '100%' }}>
-        <DataGrid
+        <DataGridPro
           rows={filteredApplications}
           columns={columns}
           getRowId={(row) => row.Id}
@@ -139,7 +139,6 @@ const ApplicationList = () => {
           rowsPerPageOptions={[10, 20, 50]}
           loading={loading}
           showToolbar
-          components={{ Toolbar: GridToolbar }}
           sx={{
             '& .MuiDataGrid-columnHeaderTitle': {
               fontWeight: 'bold',

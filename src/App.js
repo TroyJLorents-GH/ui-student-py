@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 
 // Optionally install lucide-react or use emoji/icons of your choice
-import { Menu, ChevronLeft, ChevronRight, Home, Users, LogIn, LogOut, Upload, LayoutDashboard } from "lucide-react";
+import { Menu, ChevronLeft, ChevronRight, Home, Users, LogIn, LogOut, Upload, LayoutDashboard, FileUser  } from "lucide-react";
 
 import StudentLookup from './components/StudentLookup';
 import ClassLookupCascade from './components/ClassLookupCascade';
@@ -13,6 +13,7 @@ import MasterDashboard from './pages/MasterDashboard';
 import BulkUploadAssignments from './pages/BulkUploadAssignments';
 import ManageStudentAssignments from './pages/ManageStudentAssignments';
 import StudentSummaryPage from "./pages/StudentSummaryPage";
+
 
 import { LicenseInfo } from '@mui/x-license';
 LicenseInfo.setLicenseKey(process.env.REACT_APP_MUI_LICENSE_KEY);
@@ -45,7 +46,7 @@ function App() {
   };
 
   // Sidebar width: collapsed (60px), expanded (220px)
-  const sidebarWidth = collapsed ? 60 : 220;
+  const sidebarWidth = collapsed ? 60 : 250;
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -62,7 +63,7 @@ function App() {
         left: 0,
         height: '100vh',
         zIndex: 99,
-        borderRight: '6px solid #0f0c03'
+        borderRight: '6px solidrgb(250, 243, 224)'
       }}>
         <button
           onClick={() => setCollapsed((prev) => !prev)}
@@ -101,7 +102,7 @@ function App() {
             </li>
             <li>
               <Link to="/student-summary" style={linkStyle(collapsed)}>
-                <Menu size={22} />
+                <FileUser  size={22} />
                 {!collapsed && <span>Student Summary</span>}
               </Link>
             </li>
@@ -192,6 +193,10 @@ function App() {
           <Route path="/student-summary" element={<StudentSummaryPage />} />
           <Route path="/manage-assignments" element={<ManageStudentAssignments />} />
         </Routes>
+         {/* Footer */}
+      <footer style={{ textAlign: 'center', padding: '1rem', fontSize: '0.9rem', color: '#666' }}>
+        © 2025 Developer Troy Lorents
+      </footer>
       </div>
     </div>
   );

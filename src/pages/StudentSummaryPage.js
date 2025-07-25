@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
-  Box, Typography, Button, TextField, Paper, Stack, Divider, Snackbar, Alert
+  Box, Typography, Button, TextField, Paper, Stack, Divider, Snackbar, Alert, Select, MenuItem
 } from "@mui/material";
 import {
   DataGridPro,
@@ -15,15 +15,61 @@ import CancelIcon from "@mui/icons-material/Close";
 
 // ---- DATA GRID COLUMNS (use camelCase for field names!) ----
 const columns = [
-  { field: "id", headerName: "ID", width: 70 }, // Real DB assignment Id
-  { field: "position", headerName: "Position", width: 120, editable: true },
-  { field: "weeklyHours", headerName: "Hours", width: 85, editable: true, type: "singleSelect", valueOptions: [5, 10, 15, 20], },
-  { field: "classSession", headerName: "Session", width: 95, disabled: true },
-  { field: "subject", headerName: "Subject", width: 90, disabled: true },
-  { field: "catalogNum", headerName: "Catalog #", width: 100, disabled: true },
+  { field: "id", headerName: "ID", width: 70, cellClassName: "locked-cell" }, // Real DB assignment Id
+  {
+    field: "position",
+    headerName: "Position",
+    width: 120,
+    editable: true,
+    type: "singleSelect",
+    valueOptions: ['IA', 'Grader', 'TA', 'TA (GSA) 1 credit'],
+    renderEditCell: (params) => (
+      <Select
+        value={params.value}
+        onChange={e => params.api.setEditCellValue({
+          id: params.id,
+          field: params.field,
+          value: e.target.value
+        })}
+        variant="standard"
+        fullWidth
+        // Don't add open={false}
+      >
+        {params.colDef.valueOptions.map(option => (
+          <MenuItem key={option} value={option}>{option}</MenuItem>
+        ))}
+      </Select>
+    )
+  },
+  {
+    field: "weeklyHours",
+    headerName: "Hours",
+    width: 85,
+    editable: true,
+    renderEditCell: (params) => (
+      <Select
+        value={params.value}
+        onChange={e => params.api.setEditCellValue({
+          id: params.id,
+          field: params.field,
+          value: e.target.value
+        })}
+        variant="standard"
+        fullWidth
+        // Don't add open={false}
+      >
+        {[5, 10, 15, 20].map(option => (
+          <MenuItem key={option} value={option}>{option}</MenuItem>
+        ))}
+      </Select>
+    ),
+  },
+  { field: "classSession", headerName: "Session", width: 95, disabled: true, cellClassName: "locked-cell" },
+  { field: "subject", headerName: "Subject", width: 90, disabled: true, cellClassName: "locked-cell" },
+  { field: "catalogNum", headerName: "Catalog #", width: 100, disabled: true, cellClassName: "locked-cell" },
   { field: "classNum", headerName: "Class #", width: 90, editable: true },
-  { field: "acadCareer", headerName: "Acad Career", width: 120, disabled: true },
-  { field: "instructorName", headerName: "Instructor", width: 180, disabled: true },
+  { field: "acadCareer", headerName: "Acad Career", width: 120, disabled: true, cellClassName: "locked-cell" },
+  { field: "instructorName", headerName: "Instructor", width: 180, disabled: true, cellClassName: "locked-cell" },
   {
     field: "actions",
     type: "actions",
@@ -335,7 +381,7 @@ export default function StudentSummaryPage() {
                 }
                 : col
             )}
-            editMode="row"
+            editMode="cell"
             rowModesModel={rowModesModel}
             onRowModesModelChange={setRowModesModel}
             onRowEditStop={handleRowEditStop}
@@ -346,6 +392,25 @@ export default function StudentSummaryPage() {
             showColumnVerticalBorder
             sx={{
               "& .MuiDataGrid-detailPanel": { bgcolor: "#e3f2fd" },
+               "& .locked-cell": {
+                backgroundColor: "#ececec",
+                color: "#888",
+                fontStyle: "italic",
+                fontSize: "0.97em",
+                position: "relative",
+                // Optional: "filled" border
+                border: "1px solid #ddd",
+              },
+              "& .locked-cell::after": {
+                //content: '"🔒"',
+                position: "absolute",
+                right: 8,
+                top: "50%",
+                transform: "translateY(-50%)",
+                fontSize: "1em",
+                opacity: 0.44,
+                pointerEvents: "none"
+              }
             }}
             disableSelectionOnClick
             initialState={{
@@ -359,6 +424,7 @@ export default function StudentSummaryPage() {
               color="primary"
               onClick={handleSaveAll}
               disabled={!edited}
+              startIcon={<SaveIcon />}
             >
               Save Changes
             </Button>

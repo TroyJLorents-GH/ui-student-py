@@ -18,7 +18,7 @@ const NavigationBar = () => {
 
 const styles = {
   navbar: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#7291b3ff',
     padding: '10px 20px'
   },
   navList: {

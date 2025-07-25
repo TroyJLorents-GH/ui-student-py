@@ -6,6 +6,8 @@ import {
   Typography, Button, Paper, Box, Snackbar, Alert
 } from '@mui/material';
 import { DataGridPro } from '@mui/x-data-grid-pro';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import SendIcon from '@mui/icons-material/Send';
 
 const columnMapping = {
   'Position': 'Position',
@@ -114,8 +116,8 @@ const BulkUploadAssignments = () => {
         >
           DOWNLOAD CSV TEMPLATE
         </Button>
-        <Button variant="contained" component="label">
-          SELECT .CSV File
+        <Button variant="contained" component="label" startIcon={<CloudUploadIcon />}>
+          UPLOAD CSV File
           <input type="file" hidden accept=".xlsx,.csv" onChange={handleFile} />
         </Button>
         <Button
@@ -169,6 +171,7 @@ const BulkUploadAssignments = () => {
             <Button
               variant="contained"
               color="success"
+              endIcon={<SendIcon />}
               onClick={handleUpload}
             >
               Submit to Database
@@ -194,6 +197,14 @@ const BulkUploadAssignments = () => {
             }
           }}>
             <DataGridPro
+             sx={{
+                '& .MuiDataGrid-cell': { textAlign: 'center' },
+                '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 'bold', fontSize: '1.1em', textAlign: 'center' },
+                '& .highlight-cell': {
+                  backgroundColor: '#fff9c4',
+                  fontWeight: 600,
+                },
+              }}
               rows={previewRows.map((row, idx) => ({
                 ...row,
                 id: row.id ?? idx,
@@ -208,42 +219,43 @@ const BulkUploadAssignments = () => {
                   : (row.InstructorFirstName || '') + (row.InstructorLastName || ''),
               }))}
               columns={[
-                { field: 'Position', headerName: 'Position', width: 90 },
-                { field: 'FultonFellow', headerName: 'Fulton Fellow', width: 110 },
-                { field: 'WeeklyHours', headerName: 'Weekly Hours', width: 110 },
-                { field: 'Student_ID', headerName: 'Student ID', width: 110 },
-                { field: 'ASUrite', headerName: 'ASUrite', width: 110 },
-                { field: 'ClassNum', headerName: 'Class Number', width: 110 },
-                { field: 'First_Name', headerName: 'First Name', width: 120 },
-                { field: 'Last_Name', headerName: 'Last Name', width: 120 },
-                { field: 'ASU_Email_Adress', headerName: 'ASU Email', width: 170 },
-                { field: 'Degree', headerName: 'Degree', width: 90 },
-                { field: 'cum_gpa', headerName: 'Cumulative GPA', width: 130 },
-                { field: 'cur_gpa', headerName: 'Current GPA', width: 120 },
-                { field: 'Subject', headerName: 'Subject', width: 90 },
-                { field: 'CatalogNum', headerName: 'Catalog #', width: 95 },
-                //{ field: 'SectionNum', headerName: 'Section #', width: 95 },
-                { field: 'Title', headerName: 'Title', width: 180, maxWidth: 200, flex: 1 },
-                //{ field: 'Term', headerName: 'Term', width: 80 },
+                { field: 'Position', headerName: 'Position', width: 90, headerAlign: 'center' },
+                { field: 'FultonFellow', headerName: 'Fulton Fellow', width: 110, headerAlign: 'center' },
+                { field: 'WeeklyHours', headerName: 'Weekly Hours', width: 110, headerAlign: 'center' },
+                { field: 'Student_ID', headerName: 'Student ID', width: 110, headerAlign: 'center' },
+                { field: 'ASUrite', headerName: 'ASUrite', width: 110, headerAlign: 'center' },
+                { field: 'First_Name', headerName: 'First Name', width: 120, headerAlign: 'center' },
+                { field: 'Last_Name', headerName: 'Last Name', width: 120,  headerAlign: 'center' },
+                { field: 'ASU_Email_Adress', headerName: 'ASU Email', width: 170, headerAlign: 'center' },            
+                { field: 'ClassNum', headerName: 'Class Number', width: 110, headerAlign: 'center' },
+                { field: 'Degree', headerName: 'Degree', width: 90, headerAlign: 'center' },
+                { field: 'cum_gpa', headerName: 'Cumulative GPA', width: 130, headerAlign: 'center' },
+                { field: 'cur_gpa', headerName: 'Current GPA', width: 120, headerAlign: 'center' },
+                { field: 'Subject', headerName: 'Subject', width: 90, headerAlign: 'center' },
+                { field: 'CatalogNum', headerName: 'Catalog #', width: 95, headerAlign: 'center' },
+                { field: 'SectionNum', headerName: 'Section #', width: 95, headerAlign: 'center' },
+                { field: 'Title', headerName: 'Title', width: 180, headerAlign: 'center', maxWidth: 200, flex: 1 },
                 { field: 'Session', headerName: 'Session', width: 90 },
-                { field: 'InstructorID', headerName: 'Instructor ID', width: 120 },
+                { field: 'InstructorID', headerName: 'Instructor ID', width: 120, headerAlign: 'center' },
                 {
                   field: 'InstructorName',
                   headerName: 'Instructor Name',
                   width: 170,
+                  headerAlign: 'center',
                   // No need for valueGetter, already merged above
                 },
                 //{ field: 'InstructorEmail', headerName: 'Instructor Email', width: 160 },
-                { field: 'Location', headerName: 'Location', width: 100 },
+                //{ field: 'Location', headerName: 'Location', width: 100 },
                 //{ field: 'Campus', headerName: 'Campus', width: 90 },
-                { field: 'AcadCareer', headerName: 'Acad Career', width: 120 },
+                // { field: 'AcadCareer', headerName: 'Acad Career', width: 120 },
               ]}
               showToolbar
-              density="compact"
+              // density="compact"
               pageSizeOptions={[10, 25, 50]}
               disableRowSelectionOnClick
               rowReordering
               headerFilters
+              headerAlign="center"
             />
           </Box>
           <Button

@@ -122,7 +122,7 @@ const StudentLookup = ({ setStudentData }) => {
 
           {remainingHours !== null && (
             <Typography mt={3} align="center" color={remainingHours > 0 ? 'success.main' : 'error'}>
-              {localStudentData.first_Name} {localStudentData.last_Name} has {remainingHours} hours/week {remainingHours > 0 ? 'available' : '— limit reached'}.
+              {localStudentData.First_Name} {localStudentData.Last_Name} has {remainingHours} hours/week {remainingHours > 0 ? 'available' : '— limit reached'}.
             </Typography>
           )}
         </Paper>

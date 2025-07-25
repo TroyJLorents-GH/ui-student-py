@@ -469,7 +469,7 @@ export default function MasterDashboard() {
     {
       field: 'reviewed',
       headerName: 'Reviewed',
-      width: 90,
+      width: 85,
       type: 'boolean',
       renderCell: (params) => (
         <Checkbox
@@ -665,6 +665,7 @@ export default function MasterDashboard() {
           disableSelectionOnClick
           allowColumnReordering
           showToolbar
+          rowReordering
           headerFilters
           processRowUpdate={handleRowUpdate}
         />
