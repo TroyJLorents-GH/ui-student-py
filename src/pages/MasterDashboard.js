@@ -665,7 +665,7 @@ export default function MasterDashboard() {
           disableSelectionOnClick
           allowColumnReordering
           showToolbar
-          rowReordering
+          // rowReordering
           headerFilters
           processRowUpdate={handleRowUpdate}
         />
