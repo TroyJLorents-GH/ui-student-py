@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const ALLOWED = ['t@me.com'];
-const PW = 'test123';
+const ALLOWED = (process.env.REACT_APP_ALLOWED_EMAILS || '').split(',');
+const PW =  process.env.REACT_APP_MASTER_PASSWORD;
 
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState('');
