@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Paper, Typography, TextField, Button, Grid, Snackbar, Alert } from '@mui/material';
 import { DataGridPro } from '@mui/x-data-grid-pro';
 
-const baseUrl = process.env.REACT_APP_API_URL;
+const baseUrl = process.env.REACT_APP_API_BASE;
 
 const columns = [
   { field: 'studentName', headerName: 'Student Name', headerAlign: 'center', flex: 1, minWidth: 150, maxWidth: 200 },

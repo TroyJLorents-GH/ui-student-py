@@ -6,10 +6,10 @@ import {
 import { Stack } from '@mui/material';
 
 
-const baseUrl = process.env.REACT_APP_API_URL;
+const baseUrl = process.env.REACT_APP_API_BASE;
 
 if (!baseUrl) {
-  console.error("REACT_APP_API_URL is not defined. Make sure it's set in your .env file.");
+  console.error("REACT_APP_API_BASE is not defined. Make sure it's set in your .env file.");
 }
 
 const ClassLookupCascade = ({ setClassDetails }) => {

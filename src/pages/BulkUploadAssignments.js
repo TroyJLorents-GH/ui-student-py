@@ -17,7 +17,7 @@ const columnMapping = {
   'ClassNum': 'ClassNum'
 };
 
-const baseUrl = process.env.REACT_APP_API_URL;
+const baseUrl = process.env.REACT_APP_API_BASE;
 
 const BulkUploadAssignments = () => {
   const [rows, setRows] = useState([]);
