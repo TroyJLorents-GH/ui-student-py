@@ -6,6 +6,7 @@
 
 * **Frontend**: [Live Site](https://blue-moss-0cf2b2f10.1.azurestaticapps.net/)
 * **Backend (Swagger UI)**: [FastAPI Docs](https://studenthiringapp-d8cxb6h0e8eyevhf.westus-01.azurewebsites.net/docs)
+* **Student Data**: [Testing Data – Student Lookup Use Case](https://github.com/user-attachments/files/21176231/StudentData.pdf)
 
 ---
 
