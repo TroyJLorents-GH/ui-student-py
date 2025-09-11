@@ -113,7 +113,7 @@ const AssignmentAdder = ({ studentData, classDetails, onReset }) => {
     };
 
     try {
-      const res = await fetch(`${baseUrl}/api/StudentClassAssignment`, {
+      const res = await fetch(`${baseUrl}/api/StudentClassAssignment/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

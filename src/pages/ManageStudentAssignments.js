@@ -92,7 +92,7 @@ const ManageStudentAssignments = () => {
       <Typography variant="h5" gutterBottom>
         Manage Student Assignments
       </Typography>
-      <Grid container spacing={2} alignItems="center" style={{ marginBottom: 20 }}>
+      <Grid container spacing={2} alignItems="flex-start" style={{ marginBottom: 20 }}>
         <Grid item>
           <TextField
             label="Instructor ID"
@@ -100,10 +100,15 @@ const ManageStudentAssignments = () => {
             onChange={e => setInstructorId(e.target.value)}
             variant="outlined"
             size="small"
+            helperText="Shows list of all students assigned to Instructor"
           />
         </Grid>
         <Grid item>
-          <Button variant="contained" color="primary" onClick={handleFetch}>
+          <Button
+           variant="contained"
+           color="primary"
+           onClick={handleFetch}
+           sx={{ alignSelf: "flex-start" }}>
             Fetch Students
           </Button>
         </Grid>

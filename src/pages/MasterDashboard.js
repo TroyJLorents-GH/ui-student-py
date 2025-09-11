@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 
 const baseUrl = process.env.REACT_APP_API_BASE;
+if (!baseUrl) console.error("REACT_APP_API_BASE is not defined");
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -219,7 +220,7 @@ export default function MasterDashboard() {
   // Load data from API
   useEffect(() => {
     setLoading(true);
-    fetch(`${baseUrl}/api/StudentClassAssignment`)
+    fetch(`${baseUrl}/api/StudentClassAssignment/`)
       .then(res => {
         if (!res.ok) throw new Error('Failed to load assignments');
         return res.json();

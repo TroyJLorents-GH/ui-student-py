@@ -13,6 +13,10 @@ import DeleteIcon from "@mui/icons-material/DeleteOutlined";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Close";
 
+
+const baseUrl = process.env.REACT_APP_API_BASE;
+if (!baseUrl) console.error("REACT_APP_API_BASE is not defined");
+
 // ---- DATA GRID COLUMNS (use camelCase for field names!) ----
 const columns = [
   { field: "id", headerName: "ID", width: 70, cellClassName: "locked-cell" }, // Real DB assignment Id
@@ -174,7 +178,7 @@ export default function StudentSummaryPage() {
     setLoading(true);
     setSummary(null);
     try {
-      const res = await fetch(`/api/StudentClassAssignment/student-summary/${search}`);
+      const res = await fetch(`${baseUrl}/api/StudentClassAssignment/student-summary/${encodeURIComponent(search)}`);
       if (!res.ok) throw new Error("Student not found");
       const data = await res.json();
       setSummary(data);
@@ -220,7 +224,7 @@ export default function StudentSummaryPage() {
     if (newRow.classNum !== oldRow.classNum) {
       try {
         const term = "2254";
-        const res = await fetch(`/api/class/details/${newRow.classNum}?term=${term}`);
+        const res = await fetch(`${baseUrl}/api/class/details/${encodeURIComponent(newRow.classNum)}?term=${encodeURIComponent(term)}`);
         if (!res.ok) throw new Error("Class not found");
         const classInfo = await res.json();
         updatedRow.subject = classInfo.Subject;
@@ -251,7 +255,7 @@ export default function StudentSummaryPage() {
 
       const deletes = [...pendingDeletes.current];
 
-      const response = await fetch(`/api/StudentClassAssignment/bulk-edit`, {
+      const response = await fetch(`${baseUrl}/api/StudentClassAssignment/bulk-edit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -321,15 +325,20 @@ export default function StudentSummaryPage() {
         <Typography variant="h5" gutterBottom>
           Student Assignment Summary
         </Typography>
-        <Box display="flex" gap={2} mb={2}>
+        <Box display="flex" gap={2} mb={2} alignItems="flex-start">
           <TextField
             label="ASUrite or Student ID"
             value={search}
             onChange={e => setSearch(e.target.value)}
             size="small"
             onKeyDown={e => e.key === "Enter" && handleLookup()}
+            helperText="Shows current workload, allows editing Hours, Position and Class details"
           />
-          <Button variant="contained" onClick={handleLookup} disabled={!search || loading}>
+          <Button
+           variant="contained"
+           onClick={handleLookup} 
+           disabled={!search || loading}
+           sx={{ alignSelf: "flex-start" }}>
             LOOKUP
           </Button>
         </Box>
