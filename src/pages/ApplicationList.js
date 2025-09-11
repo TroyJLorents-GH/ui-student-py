@@ -27,7 +27,7 @@ const ApplicationList = () => {
       setLoading(true);
       setError('');
       try {
-        const response = await fetch(`${baseUrl}/api/MastersIAGraderApplication`);
+        const response = await fetch(`${baseUrl}/api/MastersIAGraderApplication/`);
         if (!response.ok) throw new Error('Failed to fetch applications');
         const data = await response.json();
         setApplications(data);
@@ -50,19 +50,19 @@ const ApplicationList = () => {
     // };
 
   const columns = [
-    { field: 'Id', headerName: 'ID', headerAlign: 'center', width: 70 },
-    { field: 'Name', headerName: 'Name', headerAlign: 'center', flex: 1 },
-    { field: 'Email', headerName: 'Email', headerAlign: 'center', flex: 1.2 },
-    { field: 'ASU10DigitID', headerName: 'ASU ID', headerAlign: 'center', width: 120 },
-    { field: 'DegreeProgram', headerName: 'Degree Program', headerAlign: 'center', flex: 1.2 },
-    { field: 'GraduateGPA', headerName: 'Grad GPA', headerAlign: 'center', width: 110 },
-    { field: 'UndergraduateGPA', headerName: 'UG GPA', headerAlign: 'center', width: 110 },
+    //{ field: 'Id', headerName: 'ID', headerAlign: 'center', width: 70 },
+    { field: 'Name', headerName: 'Name', headerAlign: 'center', width: 120 },
+    { field: 'Email', headerName: 'Email', headerAlign: 'center', flex: 1 },
+    { field: 'ASU10DigitID', headerName: 'ASU ID', headerAlign: 'center', width: 100 },
+    { field: 'DegreeProgram', headerName: 'Degree Program', headerAlign: 'center', width: 150 },
+    { field: 'GraduateGPA', headerName: 'Grad GPA', headerAlign: 'center', flex: 1 },
+    { field: 'UndergraduateGPA', headerName: 'UG GPA', headerAlign: 'center', flex: 1 },
     { field: 'UndergraduateInstitution', headerName: 'UG Institution', headerAlign: 'center', flex: 1 },
     { field: 'PositionsConsidered', headerName: 'Positions', headerAlign: 'center', width: 160 },
-    { field: 'HoursAvailable', headerName: 'Hours Available', headerAlign: 'center', width: 130 },
+    { field: 'HoursAvailable', headerName: 'Hours Avbl', headerAlign: 'center', width: 110 },
     { field: 'PreferredCourses', headerName: 'Preferred Courses', headerAlign: 'center', flex: 1 },
     { field: 'ProgrammingLanguage', headerName: ' Programming Languages', headerAlign: 'center', flex: 1 },
-    { field: 'DissertationProposalStatus', headerName: 'Thesis Proposal', headerAlign: 'center', width: 180 },
+    { field: 'DissertationProposalStatus', headerName: 'Thesis', headerAlign: 'center', width: 100 },
     {
       field: 'ExpectedGraduation',
         headerName: 'Expected Grad',
@@ -78,7 +78,7 @@ const ApplicationList = () => {
       field: 'TranscriptUrl',
       headerName: 'Transcript',
       headerAlign: 'center',
-      width: 130,
+      width: 100,
       renderCell: (params) =>
         params.value ? (
           <a href={params.value} target="_blank" rel="noopener noreferrer">View</a>
@@ -88,7 +88,7 @@ const ApplicationList = () => {
       field: 'ResumeUrl',
       headerName: 'Resume',
       headerAlign: 'center',
-      width: 120,
+      width: 100,
       renderCell: (params) =>
         params.value ? (
           <a href={params.value} target="_blank" rel="noopener noreferrer">View</a>

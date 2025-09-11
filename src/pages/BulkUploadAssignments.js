@@ -166,7 +166,7 @@ const BulkUploadAssignments = () => {
               color="info"
               onClick={handleCalibrate}
             >
-              Request SQL Calibrate
+              Calibrate Student & Class Info
             </Button>
             <Button
               variant="contained"
