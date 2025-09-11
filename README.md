@@ -7,9 +7,9 @@
 * **Frontend**: [Live Site](https://blue-moss-0cf2b2f10.1.azurestaticapps.net/)
 * **Backend (Swagger UI)**: [FastAPI Docs](https://studenthiringapp-d8cxb6h0e8eyevhf.westus-01.azurewebsites.net/docs)
 * **Student Data**: [Testing Data – Student Lookup Use Case](https://github.com/user-attachments/files/21176231/StudentData.pdf)
-* **Bulk Upload Template**: [Bulk Upload Template](./assets/csv/BulkUploadTemplate.csv)
-* **Bulk Upload Data Ready File**: [Test Bulk Upload](./assets/csv/BulkUploadExample.csv)
-* **Instructor Test Info**: [Info for testing Manage Student Assignments](./assets/csv/Instructor_Info.csv)
+* **Bulk Upload Template**: [View](./assets/csv/BulkUploadTemplate.csv) • [Download](./assets/csv/BulkUploadTemplate.csv?raw=1)
+* **Bulk Upload Data Ready File**: [View](./assets/csv/BulkUploadExample.csv) • [Download](./assets/csv/BulkUploadExample.csv?raw=1)
+* **Instructor Test Info**: [View](./assets/csv/Instructor_Info.csv) • [Download](./assets/csv/Instructor_Info.csv?raw=1)
 
 ---
 
