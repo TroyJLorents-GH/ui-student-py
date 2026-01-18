@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DataGridPro } from '@mui/x-data-grid-pro';
 import {
   Paper, Typography, Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, FormGroup, FormControlLabel, Checkbox
+  Button, FormGroup, FormControlLabel, Checkbox, Snackbar, Alert
 } from '@mui/material';
 
 const baseUrl = process.env.REACT_APP_API_BASE;
@@ -31,6 +31,7 @@ export default function MasterDashboard() {
   const [rows, setRows] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   // Read and persist highlights & reviewed state
   const [recentlyEdited, setRecentlyEdited] = useState(() => {
@@ -54,7 +55,7 @@ export default function MasterDashboard() {
     localStorage.setItem('reviewedRows', JSON.stringify(reviewedRows));
   }, [reviewedRows]);
 
-  // Modal state for review button (unchanged)
+  // Modal state for review button
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
   const [reviewStatus, setReviewStatus] = useState({
@@ -65,18 +66,36 @@ export default function MasterDashboard() {
 
   // --- "Reviewed" checkbox logic ---
   function handleReviewed(rowId) {
+    const row = rows.find(r => r.id === rowId);
+    const isCurrentlyReviewed = reviewedRows[rowId];
+
     setReviewedRows(prev => {
-      // Remove highlight from that row only
-      const updated = { ...prev, [rowId]: true };
-      // Also remove from recentlyEdited
-      const newRecentlyEdited = recentlyEdited.filter(r => r.id !== rowId);
-      setRecentlyEdited(newRecentlyEdited);
-      localStorage.setItem('recentlyEditedAssignments', JSON.stringify(newRecentlyEdited));
+      const updated = { ...prev };
+
+      if (isCurrentlyReviewed) {
+        // Unchecking - remove from reviewed
+        delete updated[rowId];
+      } else {
+        // Checking - mark as reviewed
+        updated[rowId] = true;
+
+        // If deleted row, remove from view
+        if (row && row.instructorEdit === 'D') {
+          setRows(currentRows => currentRows.filter(r => r.id !== rowId));
+          setSnackbar({ open: true, message: 'Deleted assignment removed from view', severity: 'success' });
+        } else {
+          // For normal edited rows, clear the highlighting
+          const newRecentlyEdited = recentlyEdited.filter(r => r.id !== rowId);
+          setRecentlyEdited(newRecentlyEdited);
+          localStorage.setItem('recentlyEditedAssignments', JSON.stringify(newRecentlyEdited));
+        }
+      }
+
       return updated;
     });
   }
 
-  // DataGrid columns (with reviewed column inserted)
+  // DataGrid columns
   const columns = [
     { field: 'studentName', headerName: 'Student Name', headerAlign: 'center', flex: 1, minWidth: 150, maxWidth: 300 },
     { field: 'student_ID', headerName: 'ASU ID', headerAlign: 'center', width: 140 },
@@ -89,6 +108,15 @@ export default function MasterDashboard() {
     { field: 'instructorName', headerName: 'Instructor Name', headerAlign: 'center', flex: 1, minWidth: 150, maxWidth: 250 },
     { field: 'subject', headerName: 'Subject', headerAlign: 'center', width: 100 },
     { field: 'catalogNum', headerName: 'Catalog #', headerAlign: 'center', width: 100, type: 'number' },
+    {
+      field: 'course',
+      headerName: 'Course',
+      headerAlign: 'center',
+      width: 130,
+      valueGetter: (value, row) => {
+        return `${row.subject} - ${row.catalogNum}`;
+      }
+    },
     { field: 'classSession', headerName: 'Session', headerAlign: 'center', width: 100 },
     { field: 'location', headerName: 'Location', headerAlign: 'center', width: 120 },
     { field: 'campus', headerName: 'Campus', headerAlign: 'center', width: 110 },
@@ -114,7 +142,7 @@ export default function MasterDashboard() {
     {
       field: 'reviewed',
       headerName: 'Reviewed',
-      width: 85,
+      width: 90,
       type: 'boolean',
       renderCell: (params) => (
         <Checkbox
@@ -127,6 +155,7 @@ export default function MasterDashboard() {
       filterable: false,
       align: 'center',
       headerAlign: 'center',
+      description: 'Check when changes have been reviewed'
     },
     { field: 'createdAt', headerName: 'Date Created', headerAlign: 'center', width: 170 }
   ];
@@ -172,17 +201,16 @@ export default function MasterDashboard() {
 
       if (!response.ok) throw new Error('Failed to update assignment');
 
-      // Re-fetch just the updated row
-      const fresh = await fetch(`${baseUrl}/api/StudentClassAssignment/${selectedRow.id}`).then(r => r.json());
+      // Update immediately from reviewStatus for instant UI feedback
       setRows(prevRows =>
         prevRows.map(row =>
           row.id === selectedRow.id
             ? {
                 ...row,
-                ssn_Sent: fresh.SSN_Sent,
-                offer_Sent: fresh.Offer_Sent,
-                offer_Signed: fresh.Offer_Signed,
-                position_Number: fresh.Position_Number
+                ssn_Sent: reviewStatus.ssn_Sent,
+                offer_Sent: reviewStatus.offer_Sent,
+                offer_Signed: reviewStatus.offer_Signed,
+                position_Number: payload.Position_Number
               }
             : row
         )
@@ -226,6 +254,9 @@ export default function MasterDashboard() {
         return res.json();
       })
       .then(data => {
+        // Get current reviewed rows from localStorage for filtering
+        const currentReviewed = JSON.parse(localStorage.getItem('reviewedRows') || '{}');
+
         // Map to DataGrid format, format dates
         const mapped = data.map(r => ({
           id: r.Id,
@@ -252,10 +283,20 @@ export default function MasterDashboard() {
           ssn_Sent: r.SSN_Sent,
           offer_Sent: r.Offer_Sent,
           offer_Signed: r.Offer_Signed,
+          instructorEdit: r.Instructor_Edit || null,
           createdAt: formatToLocal(r.CreatedAt),
-          reviewed: reviewedRows[r.Id] || false,
+          reviewed: currentReviewed[r.Id] || false,
         }));
-        setRows(mapped);
+
+        // Filter out deleted rows that have been marked as reviewed
+        const filtered = mapped.filter(row => {
+          if (row.instructorEdit === 'D' && currentReviewed[row.id]) {
+            return false;
+          }
+          return true;
+        });
+
+        setRows(filtered);
         setError('');
       })
       .catch(err => {
@@ -263,7 +304,7 @@ export default function MasterDashboard() {
         setRows([]);
       })
       .finally(() => setLoading(false));
-  }, [reviewedRows, recentlyEdited]);
+  }, [recentlyEdited]);
 
   // --- Highlight cells only if not reviewed and in recentlyEdited ---
   const getCellClassName = (params) => {
@@ -273,6 +314,14 @@ export default function MasterDashboard() {
       return 'highlight-cell';
     }
     return '';
+  };
+
+  // Striped rows function (with deleted row styling)
+  const getRowClassName = (params) => {
+    if (params.row.instructorEdit === 'D') {
+      return 'deleted-row';
+    }
+    return params.indexRelativeToCurrentPage % 2 === 0 ? 'even-row' : 'odd-row';
   };
 
   if (error) {
@@ -285,32 +334,74 @@ export default function MasterDashboard() {
 
   return (
     <>
-      <div style={{ height: 'fit-content', width: '100%' }}>
+      <div style={{ height: 'calc(100vh - 120px)', width: '100%' }}>
         <Typography variant="h5" gutterBottom>
           Master Dashboard
         </Typography>
+        <Typography variant="body2" sx={{ opacity: 0.8, mb: 2 }}>
+          Tip: Click the <b>Columns</b> icon in the toolbar to show or hide additional fields.
+        </Typography>
         <DataGridPro
           sx={{
+            '& .MuiDataGrid-toolbar': { justifyContent: 'flex-start' },
             '& .MuiDataGrid-cell': { textAlign: 'center' },
             '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 'bold', fontSize: '1.1em' },
+            '& .MuiDataGrid-columnHeaders': {
+              position: 'sticky',
+              top: 0,
+              zIndex: 10,
+            },
             '& .highlight-cell': {
               backgroundColor: '#fff9c4',
               fontWeight: 600,
+            },
+            '& .deleted-row': {
+              backgroundColor: '#ffebee',
+              '& .MuiDataGrid-cell': {
+                textDecoration: 'line-through',
+                color: '#c62828',
+              },
+              '&:hover': {
+                backgroundColor: '#ffcdd2',
+              },
+            },
+            '& .even-row': {
+              backgroundColor: '#f5f5f5',
+              '&:hover': {
+                backgroundColor: '#e8e8e8',
+              },
+            },
+            '& .odd-row': {
+              backgroundColor: '#ffffff',
+              '&:hover': {
+                backgroundColor: '#f0f0f0',
+              },
             },
           }}
           pagination
           rows={rows}
           columns={columns}
           getCellClassName={getCellClassName}
+          getRowClassName={getRowClassName}
           loading={loading}
           initialState={{
-            pagination: { paginationModel: { pageSize: 25, page: 0 } },
+            pagination: { paginationModel: { pageSize: 50, page: 0 } },
+            density: 'compact',
+            columns: {
+              columnVisibilityModel: {
+                subject: false,
+                catalogNum: false,
+                createdAt: false,
+                cum_gpa: false,
+                cur_gpa: false,
+                asuRite: false,
+              },
+            },
           }}
           pageSizeOptions={[25, 50, 100]}
           disableSelectionOnClick
           allowColumnReordering
           showToolbar
-          // rowReordering
           headerFilters
           processRowUpdate={handleRowUpdate}
         />
@@ -349,6 +440,13 @@ export default function MasterDashboard() {
           <Button onClick={handleSaveReview} variant="contained">Save</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 }

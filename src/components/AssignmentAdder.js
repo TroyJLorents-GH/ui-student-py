@@ -13,7 +13,7 @@ if (!baseUrl) {
 }
 
 
-const AssignmentAdder = ({ studentData, classDetails, onReset }) => {
+const AssignmentAdder = ({ studentData, classDetails, sessionHours, onReset }) => {
   const [weeklyHours, setWeeklyHours] = useState('');
   const [fultonFellow, setFultonFellow] = useState('');
   const [position, setPosition] = useState('');
@@ -23,6 +23,21 @@ const AssignmentAdder = ({ studentData, classDetails, onReset }) => {
   const [assignmentSummary, setAssignmentSummary] = useState(null);
 
   const session = classDetails?.ClassSession || classDetails?.Session || '';
+  const sessionUpper = (session || '').toUpperCase().trim();
+
+  // Get remaining hours for the selected class session
+  const getRemainingForSession = () => {
+    if (!sessionHours) return 20;
+    if (sessionUpper === 'A') return sessionHours.remainingA;
+    if (sessionUpper === 'B') return sessionHours.remainingB;
+    if (sessionUpper === 'C') return sessionHours.remainingC;
+    return 20; // default if session not recognized
+  };
+
+  const remainingForSession = getRemainingForSession();
+
+  // Filter available hours based on remaining hours for this session
+  const availableHours = [5, 10, 15, 20].filter(hours => hours <= remainingForSession);
 
   const calculateComp = (pos, hours, edu, fellow, session) => {
     const h = parseInt(hours, 10);
@@ -81,6 +96,16 @@ const AssignmentAdder = ({ studentData, classDetails, onReset }) => {
       return setSnackbar({
         open: true,
         message: !studentData ? "Missing student data" : "You must acknowledge the assignment",
+        severity: 'error'
+      });
+    }
+
+    // Validate hours against session limit
+    const hoursToAdd = parseInt(weeklyHours, 10);
+    if (hoursToAdd > remainingForSession) {
+      return setSnackbar({
+        open: true,
+        message: `Cannot add ${hoursToAdd} hours. Student only has ${remainingForSession} hours remaining for Session ${sessionUpper}.`,
         severity: 'error'
       });
     }
@@ -270,11 +295,16 @@ const AssignmentAdder = ({ studentData, classDetails, onReset }) => {
           <FormControl fullWidth sx={{ minWidth: 250 }} required>
             <InputLabel>Weekly Hours</InputLabel>
             <Select value={weeklyHours} onChange={(e) => setWeeklyHours(e.target.value)} label="Weekly Hours">
-              {[5, 10, 15, 20].map(h => (
+              {availableHours.map(h => (
                 <MenuItem key={h} value={h}>{h}</MenuItem>
               ))}
             </Select>
           </FormControl>
+          {sessionUpper && remainingForSession !== null && (
+            <Typography variant="caption" sx={{ mt: 0.5, display: 'block', color: remainingForSession > 0 ? 'success.main' : 'error.main' }}>
+              {remainingForSession} hours remaining for Session {sessionUpper}
+            </Typography>
+          )}
         </Grid>
 
         <Grid item xs={12} sm={4}>

@@ -3,10 +3,18 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, Button, Grid, Paper, TextField, Typography,
-  Snackbar, Alert, Divider, Stack
+  Snackbar, Alert, Divider, Stack, AlertTitle, Card, CardContent, LinearProgress
 } from '@mui/material';
 
+// Helper function to get color based on remaining hours
+const getSessionColor = (remaining) => {
+  if (remaining === 0) return { main: '#d32f2f', light: '#ffebee', text: '#c62828' }; // Red
+  if (remaining <= 10) return { main: '#f57c00', light: '#fff3e0', text: '#e65100' }; // Orange/Yellow
+  return { main: '#2e7d32', light: '#e8f5e9', text: '#1b5e20' }; // Green
+};
 
+// Calculate progress percentage (hours used out of 20)
+const getProgressValue = (remaining) => ((20 - remaining) / 20) * 100;
 
 const baseUrl = process.env.REACT_APP_API_BASE;
 
@@ -14,15 +22,13 @@ if (!baseUrl) {
   console.error("REACT_APP_API_BASE is not defined. Make sure it's set in your .env file.");
 }
 
-const StudentLookup = ({ setStudentData }) => {
+const StudentLookup = ({ setStudentData, setSessionHours }) => {
   const [studentIDInput, setStudentIDInput] = useState('');
   const [localStudentData, setLocalStudentData] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [remainingHours, setRemainingHours] = useState(null);
-
-
+  const [localSessionHours, setLocalSessionHours] = useState(null);
 
   const handleStudentSearch = async () => {
     setError('');
@@ -57,21 +63,43 @@ const StudentLookup = ({ setStudentData }) => {
 
   useEffect(() => {
     if (localStudentData) {
-      const fetchTotalHours = async () => {
+      const fetchSessionHours = async () => {
         try {
           const res = await fetch(`${baseUrl}/api/StudentClassAssignment/totalhours/${localStudentData.Student_ID}`);
           if (!res.ok) throw new Error('Failed to fetch assigned hours');
-          const total = await res.json();
-          const remaining = Math.max(20 - total, 0);
-          setRemainingHours(remaining);
+          const data = await res.json();
+
+          // Handle both session-based response and simple total response
+          if (typeof data === 'object' && data.remainingA !== undefined) {
+            // Session-based hours: { hoursA, hoursB, hoursC, remainingA, remainingB, remainingC, total }
+            setLocalSessionHours(data);
+            if (setSessionHours) setSessionHours(data);
+          } else {
+            // Simple total hours (number) - convert to session format for compatibility
+            const total = typeof data === 'number' ? data : 0;
+            const remaining = Math.max(20 - total, 0);
+            const sessionData = {
+              total,
+              remaining,
+              remainingA: remaining,
+              remainingB: remaining,
+              remainingC: remaining,
+              hoursA: total,
+              hoursB: total,
+              hoursC: total,
+            };
+            setLocalSessionHours(sessionData);
+            if (setSessionHours) setSessionHours(sessionData);
+          }
         } catch (err) {
           console.error(err);
-          setRemainingHours(null);
+          setLocalSessionHours(null);
+          if (setSessionHours) setSessionHours(null);
         }
       };
-      fetchTotalHours();
+      fetchSessionHours();
     }
-  }, [localStudentData]);
+  }, [localStudentData, setSessionHours]);
 
   const toggleAddForm = () => setShowAddForm(prev => !prev);
 
@@ -120,10 +148,64 @@ const StudentLookup = ({ setStudentData }) => {
             <TextField disabled variant="filled" label="Education Level" value={localStudentData.Degree} sx={{ width: 150 }} />
           </Stack>
 
-          {remainingHours !== null && (
-            <Typography mt={3} align="center" color={remainingHours > 0 ? 'success.main' : 'error'}>
-              {localStudentData.First_Name} {localStudentData.Last_Name} has {remainingHours} hours/week {remainingHours > 0 ? 'available' : '— limit reached'}.
-            </Typography>
+          {localSessionHours !== null && (
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold', textAlign: 'center' }}>
+                Remaining Hours by Session
+              </Typography>
+              <Stack direction="row" spacing={2} justifyContent="center">
+                {[
+                  { label: 'Session A', remaining: localSessionHours.remainingA, subtitle: 'First Half' },
+                  { label: 'Session B', remaining: localSessionHours.remainingB, subtitle: 'Second Half' },
+                  { label: 'Session C', remaining: localSessionHours.remainingC, subtitle: 'Full Semester' },
+                ].map((session) => {
+                  const colors = getSessionColor(session.remaining);
+                  return (
+                    <Card
+                      key={session.label}
+                      sx={{
+                        minWidth: 140,
+                        backgroundColor: colors.light,
+                        border: `2px solid ${colors.main}`,
+                        borderRadius: 2,
+                      }}
+                    >
+                      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                        <Typography variant="caption" sx={{ color: '#000', fontWeight: 600 }}>
+                          {session.label}
+                        </Typography>
+                        <Typography variant="h4" sx={{ color: colors.text, fontWeight: 'bold', my: 0.5 }}>
+                          {session.remaining}h
+                        </Typography>
+                        <LinearProgress
+                          variant="determinate"
+                          value={getProgressValue(session.remaining)}
+                          sx={{
+                            height: 6,
+                            borderRadius: 3,
+                            backgroundColor: '#e0e0e0',
+                            '& .MuiLinearProgress-bar': {
+                              backgroundColor: colors.main,
+                              borderRadius: 3,
+                            },
+                          }}
+                        />
+                        <Typography variant="caption" sx={{ color: colors.text, fontSize: '0.7rem', fontWeight: 500 }}>
+                          {session.subtitle}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </Stack>
+            </Box>
+          )}
+
+          {localSessionHours !== null && localSessionHours.remainingA === 0 && localSessionHours.remainingB === 0 && localSessionHours.remainingC === 0 && (
+            <Alert severity="error" sx={{ mt: 3 }}>
+              <AlertTitle>Cannot Assign Student</AlertTitle>
+              <strong>{localStudentData.First_Name} {localStudentData.Last_Name}</strong> has reached 20 hours for all sessions and cannot be assigned to any additional positions.
+            </Alert>
           )}
         </Paper>
       )}
