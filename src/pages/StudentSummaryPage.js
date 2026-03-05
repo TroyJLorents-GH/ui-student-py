@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
-  Box, Typography, Button, TextField, Paper, Stack, Divider, Snackbar, Alert, Select, MenuItem
+  Box, Typography, Button, TextField, Paper, Stack, Divider, Snackbar, Alert, Select, MenuItem,
+  Chip, Card, CardContent, LinearProgress
 } from "@mui/material";
 import {
   DataGridPro,
@@ -13,9 +14,16 @@ import DeleteIcon from "@mui/icons-material/DeleteOutlined";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Close";
 
-
 const baseUrl = process.env.REACT_APP_API_BASE;
 if (!baseUrl) console.error("REACT_APP_API_BASE is not defined");
+
+// Color helper for session hours
+const getSessionColor = (remaining) => {
+  if (remaining === 0) return { main: '#d32f2f', light: '#ffebee', text: '#c62828' };
+  if (remaining <= 10) return { main: '#f57c00', light: '#fff3e0', text: '#e65100' };
+  return { main: '#2e7d32', light: '#e8f5e9', text: '#1b5e20' };
+};
+const getProgressValue = (remaining) => ((20 - remaining) / 20) * 100;
 
 // ---- DATA GRID COLUMNS (use camelCase for field names!) ----
 const columns = [
@@ -37,7 +45,6 @@ const columns = [
         })}
         variant="standard"
         fullWidth
-        // Don't add open={false}
       >
         {params.colDef.valueOptions.map(option => (
           <MenuItem key={option} value={option}>{option}</MenuItem>
@@ -60,7 +67,6 @@ const columns = [
         })}
         variant="standard"
         fullWidth
-        // Don't add open={false}
       >
         {[5, 10, 15, 20].map(option => (
           <MenuItem key={option} value={option}>{option}</MenuItem>
@@ -122,7 +128,6 @@ function AssignmentDetailPanel({ row }) {
         <Box>
           <Typography variant="body2"><b>Subject:</b> {row.subject}</Typography>
           <Typography variant="body2"><b>Catalog #:</b> {row.catalogNum}</Typography>
-          
         </Box>
         <Box>
           <Typography variant="body2"><b>Instructor:</b> {row.instructorName}</Typography>
@@ -302,27 +307,70 @@ export default function StudentSummaryPage() {
     setSnackbar({ open: true, message: 'Changes discarded', severity: 'info' });
   };
 
-  // --- Available weekly hours calculation ---
-  const renderAvailableHours = (summary) => {
+  // --- Session hours cards with color-coded remaining ---
+  const renderSessionCards = (summary) => {
     const maxWeeklyHours = 20;
     const sessionA = summary.sessionA || 0;
     const sessionB = summary.sessionB || 0;
     const sessionC = summary.sessionC || 0;
     const totalAssignedHours = sessionA + sessionB + sessionC;
     const hoursLeft = Math.max(maxWeeklyHours - totalAssignedHours, 0);
+    const colors = getSessionColor(hoursLeft);
 
     return (
-      <Typography variant="subtitle2" color={hoursLeft <= 0 ? "error" : "primary"} sx={{ mt: 2 }}>
-        {summary.StudentName} has {hoursLeft} weekly hour{hoursLeft === 1 ? "" : "s"} available to be hired.
-      </Typography>
+      <Box sx={{ mt: 2 }}>
+        <Typography variant="body1" fontWeight="bold" sx={{ mb: 1 }}>Session Hours:</Typography>
+        <Stack direction="row" spacing={2} flexWrap="wrap">
+          {[
+            { label: 'Session A', hours: sessionA },
+            { label: 'Session B', hours: sessionB },
+            { label: 'Session C', hours: sessionC },
+          ].map((s) => (
+            <Chip key={s.label} label={`${s.label}: ${s.hours}h`} variant="outlined" size="small" />
+          ))}
+        </Stack>
+        <Stack direction="row" spacing={2} sx={{ mt: 2 }} justifyContent="flex-start">
+          <Card sx={{
+            minWidth: 180,
+            backgroundColor: colors.light,
+            border: `2px solid ${colors.main}`,
+            borderRadius: 2,
+          }}>
+            <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+              <Typography variant="caption" sx={{ color: '#000', fontWeight: 600 }}>
+                Total Remaining
+              </Typography>
+              <Typography variant="h4" sx={{ color: colors.text, fontWeight: 'bold', my: 0.5 }}>
+                {hoursLeft}h
+              </Typography>
+              <LinearProgress
+                variant="determinate"
+                value={getProgressValue(hoursLeft)}
+                sx={{
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor: '#e0e0e0',
+                  '& .MuiLinearProgress-bar': {
+                    backgroundColor: colors.main,
+                    borderRadius: 3,
+                  },
+                }}
+              />
+              <Typography variant="caption" sx={{ color: colors.text, fontSize: '0.7rem', fontWeight: 500 }}>
+                of 20 hours/week
+              </Typography>
+            </CardContent>
+          </Card>
+        </Stack>
+      </Box>
     );
   };
 
   return (
     <Box maxWidth={1300} mx="auto" mt={4}>
       {/* Search Card */}
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h5" gutterBottom>
+      <Paper elevation={3} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
+        <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
           Student Assignment Summary
         </Typography>
         <Box display="flex" gap={2} mb={2} alignItems="flex-start">
@@ -336,7 +384,7 @@ export default function StudentSummaryPage() {
           />
           <Button
            variant="contained"
-           onClick={handleLookup} 
+           onClick={handleLookup}
            disabled={!search || loading}
            sx={{ alignSelf: "flex-start" }}>
             LOOKUP
@@ -349,83 +397,94 @@ export default function StudentSummaryPage() {
 
       {/* Student Info Card */}
       {summary && (
-        <Paper sx={{ p: 3, mb: 3, bgcolor: "#f1f5f9" }}>
-          <Typography variant="h6" gutterBottom>
-            {summary.StudentName} ({summary.ASUrite})
-          </Typography>
-          <Typography variant="subtitle1">
-            Education: {summary.EducationLevel}
-          </Typography>
-          <Box mt={2}>
-            <Typography variant="body1" fontWeight="bold">Session Hours:</Typography>
-            <Box display="flex" gap={3} mt={1}>
-              <div>Session A: <b>{summary.sessionA}</b> hrs</div>
-              <div>Session B: <b>{summary.sessionB}</b> hrs</div>
-              <div>Session C: <b>{summary.sessionC}</b> hrs</div>
-            </Box>
-            {/* Show available hours */}
-            {renderAvailableHours(summary)}
+        <Paper elevation={3} sx={{ p: 3, mb: 3, bgcolor: "#f1f5f9", borderRadius: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+            <Typography variant="h6">
+              {summary.StudentName} ({summary.ASUrite})
+            </Typography>
+            <Chip label={summary.EducationLevel} size="small" variant="outlined" />
           </Box>
+          {renderSessionCards(summary)}
         </Paper>
       )}
 
       {/* Assignment DataGridPro with detail panel and editing */}
       {summary && (
-        <Box sx={{ height: 500, width: "100%" }}>
-          <DataGridPro
-            pagination
-            rows={rows}
-            columns={columns.map(col =>
-              col.field === "actions"
-                ? {
-                  ...col,
-                  getActions: params => columns[columns.length - 1].getActions(
-                    params,
-                    rowModesModel,
-                    handleEditClick,
-                    handleDeleteClick,
-                    handleSaveClick,
-                    handleCancelClick
-                  )
-                }
-                : col
-            )}
-            editMode="cell"
-            rowModesModel={rowModesModel}
-            onRowModesModelChange={setRowModesModel}
-            onRowEditStop={handleRowEditStop}
-            processRowUpdate={processRowUpdate}
-            getDetailPanelContent={({ row }) => <AssignmentDetailPanel row={row} />}
-            getDetailPanelHeight={() => "auto"}
-            showCellVerticalBorder
-            showColumnVerticalBorder
-            sx={{
-              "& .MuiDataGrid-detailPanel": { bgcolor: "#e3f2fd" },
-               "& .locked-cell": {
-                backgroundColor: "#ececec",
-                color: "#888",
-                fontStyle: "italic",
-                fontSize: "0.97em",
-                position: "relative",
-                // Optional: "filled" border
-                border: "1px solid #ddd",
-              },
-              "& .locked-cell::after": {
-                //content: '"🔒"',
-                position: "absolute",
-                right: 8,
-                top: "50%",
-                transform: "translateY(-50%)",
-                fontSize: "1em",
-                opacity: 0.44,
-                pointerEvents: "none"
-              }
-            }}
-            disableSelectionOnClick
-            initialState={{
-              pagination: { paginationModel: { pageSize: 10 } }
-            }}
-          />
+        <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Assignments</Typography>
+            <Chip
+              label={`${rows.length} assignment${rows.length !== 1 ? 's' : ''}`}
+              size="small"
+              color="primary"
+              variant="outlined"
+            />
+          </Box>
+
+          <Typography variant="body2" sx={{ opacity: 0.7, mb: 2 }}>
+            Tip: Click the edit icon to modify Position, Hours, or Class #. Gray cells are read-only. Expand rows for full details.
+          </Typography>
+
+          <Divider sx={{ mb: 2 }} />
+
+          <Box sx={{ height: 500, width: "100%" }}>
+            <DataGridPro
+              pagination
+              rows={rows}
+              columns={columns.map(col =>
+                col.field === "actions"
+                  ? {
+                    ...col,
+                    getActions: params => columns[columns.length - 1].getActions(
+                      params,
+                      rowModesModel,
+                      handleEditClick,
+                      handleDeleteClick,
+                      handleSaveClick,
+                      handleCancelClick
+                    )
+                  }
+                  : col
+              )}
+              editMode="cell"
+              rowModesModel={rowModesModel}
+              onRowModesModelChange={setRowModesModel}
+              onRowEditStop={handleRowEditStop}
+              processRowUpdate={processRowUpdate}
+              getDetailPanelContent={({ row }) => <AssignmentDetailPanel row={row} />}
+              getDetailPanelHeight={() => "auto"}
+              showCellVerticalBorder
+              showColumnVerticalBorder
+              sx={{
+                border: '1px solid #e0e0e0',
+                borderRadius: 1,
+                "& .MuiDataGrid-detailPanel": { bgcolor: "#e3f2fd" },
+                "& .locked-cell": {
+                  backgroundColor: "#ececec",
+                  color: "#888",
+                  fontStyle: "italic",
+                  fontSize: "0.97em",
+                  position: "relative",
+                  border: "1px solid #ddd",
+                },
+                "& .locked-cell::after": {
+                  position: "absolute",
+                  right: 8,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  fontSize: "1em",
+                  opacity: 0.44,
+                  pointerEvents: "none"
+                },
+                '& .MuiDataGrid-footerContainer': { borderTop: '2px solid #e0e0e0' },
+              }}
+              disableSelectionOnClick
+              initialState={{
+                pagination: { paginationModel: { pageSize: 10 } }
+              }}
+            />
+          </Box>
+
           {/* Save/discard buttons */}
           <Box mt={2} display="flex" gap={2}>
             <Button
@@ -439,14 +498,14 @@ export default function StudentSummaryPage() {
             </Button>
             <Button
               variant="outlined"
-              color="secondary"
+              color="error"
               onClick={handleDiscard}
               disabled={!edited}
             >
               Discard Changes
             </Button>
           </Box>
-        </Box>
+        </Paper>
       )}
 
       {/* Snackbar for feedback */}

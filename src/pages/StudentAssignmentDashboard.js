@@ -24,9 +24,12 @@ import {
   Menu,
   ListItemIcon,
   ListItemText,
+  Chip,
+  Divider,
 } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import SettingsIcon from '@mui/icons-material/Settings';
+import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 
 const baseUrl = process.env.REACT_APP_API_BASE;
 
@@ -247,27 +250,44 @@ export default function StudentAssignmentDashboard() {
   }
 
   return (
-    <Paper elevation={3} sx={{ padding: 3, margin: 2 }}>
-      <Typography variant="h5" gutterBottom>
-        Student Assignment Dashboard
-      </Typography>
+    <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+      {/* Header */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+            Student Assignment Dashboard
+          </Typography>
+          <Chip
+            label={`${visibleRows.length} record${visibleRows.length !== 1 ? 's' : ''}`}
+            size="small"
+            color="primary"
+            variant="outlined"
+          />
+        </Box>
 
-      <Box mb={2}>
-        <FormControl sx={{ minWidth: 240 }}>
-          <InputLabel>Position</InputLabel>
+        {/* Position Filter */}
+        <FormControl size="small" sx={{ minWidth: 200 }}>
+          <InputLabel>Filter by Position</InputLabel>
           <Select
             value={positionFilter}
-            label="Position"
+            label="Filter by Position"
             onChange={(e) => setPositionFilter(e.target.value)}
           >
             {POSITION_OPTIONS.map((pos) => (
-              <MenuItem key={pos} value={pos}>
-                {pos}
-              </MenuItem>
+              <MenuItem key={pos} value={pos}>{pos}</MenuItem>
             ))}
           </Select>
         </FormControl>
       </Box>
+
+      {/* Helper tip */}
+      <Typography variant="body2" sx={{ opacity: 0.7, mb: 2 }}>
+        Tip: Click the <b>Columns</b>{' '}
+        <ViewColumnIcon sx={{ fontSize: '1.25rem', verticalAlign: 'text-bottom', display: 'inline' }} />{' '}
+        button in the toolbar to show/hide fields or drag to reorder.
+      </Typography>
+
+      <Divider sx={{ mb: 2 }} />
 
       {error && (
         <Typography color="error" mb={2}>
@@ -275,9 +295,11 @@ export default function StudentAssignmentDashboard() {
         </Typography>
       )}
 
-      <div style={{ height: 'calc(100vh - 200px)', width: '100%' }}>
+      <div style={{ height: 'calc(100vh - 260px)', width: '100%' }}>
         <DataGridPro
           sx={{
+            border: '1px solid #e0e0e0',
+            borderRadius: 1,
             '& .MuiDataGrid-toolbar': { justifyContent: 'flex-start' },
             '& .MuiDataGrid-cell': { textAlign: 'center' },
             '& .MuiDataGrid-columnHeaders': {
@@ -288,17 +310,14 @@ export default function StudentAssignmentDashboard() {
             },
             '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 'bold', fontSize: '1.05em' },
             '& .even-row': {
-              backgroundColor: '#f5f5f5',
-              '&:hover': {
-                backgroundColor: '#e8e8e8',
-              },
+              backgroundColor: '#fafafa',
+              '&:hover': { backgroundColor: '#f0f0f0' },
             },
             '& .odd-row': {
               backgroundColor: '#ffffff',
-              '&:hover': {
-                backgroundColor: '#f0f0f0',
-              },
+              '&:hover': { backgroundColor: '#f5f5f5' },
             },
+            '& .MuiDataGrid-footerContainer': { borderTop: '2px solid #e0e0e0' },
           }}
           rows={visibleRows}
           columns={columns}
@@ -312,15 +331,15 @@ export default function StudentAssignmentDashboard() {
               columnVisibilityModel: {
                 cum_gpa: false,
                 cur_gpa: false,
+                location: false,
+                campus: false,
               }
             },
           }}
-          pageSizeOptions={[25, 50, 100]}
+          pageSizeOptions={[25, 50, 100, { value: visibleRows.length || 1, label: 'All' }]}
           disableSelectionOnClick
           allowColumnReordering
-          slots={{
-            toolbar: CustomToolbar,
-          }}
+          slots={{ toolbar: CustomToolbar }}
           showToolbar
           headerFilters
         />

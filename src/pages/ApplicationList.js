@@ -1,19 +1,78 @@
-import React, { useState, useEffect } from 'react';
-import { DataGridPro } from '@mui/x-data-grid-pro';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  Paper,
-  Typography,
-  Box,
-  MenuItem,
-  FormControl,
-  Select,
-  InputLabel
+  DataGridPro,
+  gridDensitySelector,
+  ToolbarButton,
+  useGridApiContext,
+  useGridSelector,
+  GridToolbarContainer,
+  GridToolbarColumnsButton,
+  GridToolbarFilterButton,
+  GridToolbarExport,
+  GridToolbarQuickFilter,
+} from '@mui/x-data-grid-pro';
+import {
+  Paper, Typography, Box, MenuItem, FormControl, Select, InputLabel,
+  Chip, Divider, Tooltip, Menu, ListItemIcon, ListItemText
 } from '@mui/material';
+import CheckIcon from '@mui/icons-material/Check';
+import SettingsIcon from '@mui/icons-material/Settings';
+import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 
 const baseUrl = process.env.REACT_APP_API_BASE;
+if (!baseUrl) console.error("REACT_APP_API_BASE is not defined. Make sure it's set in your .env file.");
 
-if (!baseUrl) {
-  console.error("REACT_APP_API_BASE is not defined. Make sure it's set in your .env file.");
+const DENSITY_OPTIONS = [
+  { label: 'Compact density', value: 'compact' },
+  { label: 'Standard density', value: 'standard' },
+  { label: 'Comfortable density', value: 'comfortable' },
+];
+
+function CustomToolbar() {
+  const apiRef = useGridApiContext();
+  const density = useGridSelector(apiRef, gridDensitySelector);
+  const [densityMenuOpen, setDensityMenuOpen] = useState(false);
+  const densityMenuTriggerRef = useRef(null);
+
+  return (
+    <GridToolbarContainer>
+      <GridToolbarColumnsButton />
+      <GridToolbarFilterButton />
+      <GridToolbarExport />
+      <GridToolbarQuickFilter />
+      <Tooltip title="Adjust row density">
+        <ToolbarButton
+          ref={densityMenuTriggerRef}
+          id="density-menu-trigger"
+          aria-controls="density-menu"
+          aria-haspopup="true"
+          aria-expanded={densityMenuOpen ? 'true' : undefined}
+          onClick={() => setDensityMenuOpen(true)}
+        >
+          <SettingsIcon fontSize="small" />
+        </ToolbarButton>
+      </Tooltip>
+      <Menu
+        id="density-menu"
+        anchorEl={densityMenuTriggerRef.current}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        open={densityMenuOpen}
+        onClose={() => setDensityMenuOpen(false)}
+        slotProps={{ list: { 'aria-labelledby': 'density-menu-trigger' } }}
+      >
+        {DENSITY_OPTIONS.map((option) => (
+          <MenuItem
+            key={option.value}
+            onClick={() => { apiRef.current.setDensity(option.value); setDensityMenuOpen(false); }}
+          >
+            <ListItemIcon>{density === option.value && <CheckIcon fontSize="small" />}</ListItemIcon>
+            <ListItemText>{option.label}</ListItemText>
+          </MenuItem>
+        ))}
+      </Menu>
+    </GridToolbarContainer>
+  );
 }
 
 const ApplicationList = () => {
@@ -43,42 +102,37 @@ const ApplicationList = () => {
     ? applications.filter(app => app.DegreeProgram === degreeFilter)
     : applications;
 
-    // const formatDate = (value) => {
-    //   if (!value) return '';
-    //   const date = new Date(value);
-    //   return isNaN(date.getTime()) ? 'Invalid Date' : `${date.getMonth() + 1}/${date.getFullYear()}`;
-    // };
-
   const columns = [
-    //{ field: 'Id', headerName: 'ID', headerAlign: 'center', width: 70 },
-    { field: 'Name', headerName: 'Name', headerAlign: 'center', width: 120 },
-    { field: 'Email', headerName: 'Email', headerAlign: 'center', flex: 1 },
-    { field: 'ASU10DigitID', headerName: 'ASU ID', headerAlign: 'center', width: 100 },
-    { field: 'DegreeProgram', headerName: 'Degree Program', headerAlign: 'center', width: 150 },
-    { field: 'GraduateGPA', headerName: 'Grad GPA', headerAlign: 'center', flex: 1 },
-    { field: 'UndergraduateGPA', headerName: 'UG GPA', headerAlign: 'center', flex: 1 },
-    { field: 'UndergraduateInstitution', headerName: 'UG Institution', headerAlign: 'center', flex: 1 },
-    { field: 'PositionsConsidered', headerName: 'Positions', headerAlign: 'center', width: 160 },
-    { field: 'HoursAvailable', headerName: 'Hours Avbl', headerAlign: 'center', width: 110 },
-    { field: 'PreferredCourses', headerName: 'Preferred Courses', headerAlign: 'center', flex: 1 },
-    { field: 'ProgrammingLanguage', headerName: ' Programming Languages', headerAlign: 'center', flex: 1 },
-    { field: 'DissertationProposalStatus', headerName: 'Thesis', headerAlign: 'center', width: 100 },
+    { field: 'Name', headerName: 'Name', headerAlign: 'center', flex: 1, minWidth: 120 },
+    { field: 'Email', headerName: 'Email', headerAlign: 'center', flex: 1.2, minWidth: 180 },
+    { field: 'ASU10DigitID', headerName: 'ASU ID', headerAlign: 'center', flex: 0.6, minWidth: 100 },
+    { field: 'DegreeProgram', headerName: 'Degree Program', headerAlign: 'center', flex: 1.2, minWidth: 150 },
+    { field: 'GraduateGPA', headerName: 'Grad GPA', headerAlign: 'center', flex: 0.5, minWidth: 100 },
+    { field: 'UndergraduateGPA', headerName: 'UG GPA', headerAlign: 'center', flex: 0.5, minWidth: 100 },
+    { field: 'UndergraduateInstitution', headerName: 'UG Institution', headerAlign: 'center', flex: 1, minWidth: 130 },
+    { field: 'PositionsConsidered', headerName: 'Positions', headerAlign: 'center', flex: 0.8, minWidth: 130 },
+    { field: 'HoursAvailable', headerName: 'Hours Avbl', headerAlign: 'center', flex: 0.6, minWidth: 110 },
+    { field: 'PreferredCourses', headerName: 'Preferred Courses', headerAlign: 'center', flex: 1, minWidth: 150 },
+    { field: 'ProgrammingLanguage', headerName: 'Programming Languages', headerAlign: 'center', flex: 1, minWidth: 150 },
+    { field: 'DissertationProposalStatus', headerName: 'Thesis', headerAlign: 'center', flex: 0.8, minWidth: 100 },
     {
       field: 'ExpectedGraduation',
-        headerName: 'Expected Grad',
-        headerAlign: 'center',
-        width: 140,
-        renderCell: (params) => {
-          const date = new Date(params.value);
-          if (isNaN(date.getTime())) return 'Invalid Date';
-          return `${date.getMonth() + 1}/${date.getFullYear()}`;
-        }
+      headerName: 'Expected Grad',
+      headerAlign: 'center',
+      flex: 0.6,
+      minWidth: 120,
+      renderCell: (params) => {
+        const date = new Date(params.value);
+        if (isNaN(date.getTime())) return 'Invalid Date';
+        return `${date.getMonth() + 1}/${date.getFullYear()}`;
+      }
     },
     {
       field: 'TranscriptUrl',
       headerName: 'Transcript',
       headerAlign: 'center',
-      width: 100,
+      flex: 0.5,
+      minWidth: 100,
       renderCell: (params) =>
         params.value ? (
           <a href={params.value} target="_blank" rel="noopener noreferrer">View</a>
@@ -88,7 +142,8 @@ const ApplicationList = () => {
       field: 'ResumeUrl',
       headerName: 'Resume',
       headerAlign: 'center',
-      width: 100,
+      flex: 0.5,
+      minWidth: 100,
       renderCell: (params) =>
         params.value ? (
           <a href={params.value} target="_blank" rel="noopener noreferrer">View</a>
@@ -96,14 +151,26 @@ const ApplicationList = () => {
     }
   ];
 
-  return (
-    <Paper elevation={3} sx={{ padding: 3, margin: 2 }}>
-      <Typography variant="h5" gutterBottom>
-        Masters Application List
-      </Typography>
+  const getRowClassName = (params) =>
+    params.indexRelativeToCurrentPage % 2 === 0 ? 'even-row' : 'odd-row';
 
-      <Box mb={2}>
-        <FormControl sx={{ minWidth: 300 }}>
+  return (
+    <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+      {/* Header */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+            Masters Application List
+          </Typography>
+          <Chip
+            label={`${filteredApplications.length} applicant${filteredApplications.length !== 1 ? 's' : ''}`}
+            size="small"
+            color="primary"
+            variant="outlined"
+          />
+        </Box>
+
+        <FormControl size="small" sx={{ minWidth: 260 }}>
           <InputLabel>Filter by Degree Program</InputLabel>
           <Select
             value={degreeFilter}
@@ -124,32 +191,58 @@ const ApplicationList = () => {
         </FormControl>
       </Box>
 
+      <Typography variant="body2" sx={{ opacity: 0.7, mb: 2 }}>
+        Tip: Click the <b>Columns</b>{' '}
+        <ViewColumnIcon sx={{ fontSize: '1.25rem', verticalAlign: 'text-bottom', display: 'inline' }} />{' '}
+        button to show/hide fields. Use <b>Quick Search</b> to filter by name, email, or any text.
+      </Typography>
+
+      <Divider sx={{ mb: 2 }} />
+
       {error && (
-        <Typography color="error" mb={2}>
-          Error: {error}
-        </Typography>
+        <Typography color="error" mb={2}>Error: {error}</Typography>
       )}
 
-      <div style={{ height: 'fit-content', width: '100%' }}>
+      <div style={{ height: 'calc(100vh - 260px)', width: '100%' }}>
         <DataGridPro
           rows={filteredApplications}
           columns={columns}
           getRowId={(row) => row.Id}
-          pageSize={20}
-          rowsPerPageOptions={[10, 20, 50]}
+          getRowClassName={getRowClassName}
           loading={loading}
+          pagination
+          initialState={{
+            pagination: { paginationModel: { pageSize: 50, page: 0 } },
+            density: 'standard',
+            columns: {
+              columnVisibilityModel: {
+                UndergraduateInstitution: false,
+                DissertationProposalStatus: false,
+              },
+            },
+          }}
+          pageSizeOptions={[25, 50, 100, { value: filteredApplications.length || 1, label: 'All' }]}
+          disableSelectionOnClick
+          allowColumnReordering
+          slots={{ toolbar: CustomToolbar }}
           showToolbar
+          headerFilters
           sx={{
-            '& .MuiDataGrid-columnHeaderTitle': {
-              fontWeight: 'bold',
-              fontSize: '1.05rem'
+            border: '1px solid #e0e0e0',
+            borderRadius: 1,
+            '& .MuiDataGrid-toolbar': { justifyContent: 'flex-start' },
+            '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 'bold', fontSize: '1.05rem' },
+            '& .MuiDataGrid-cell': { textAlign: 'center' },
+            '& .MuiDataGrid-columnHeaders': { backgroundColor: '#f9f9f9' },
+            '& .even-row': {
+              backgroundColor: '#fafafa',
+              '&:hover': { backgroundColor: '#f0f0f0' },
             },
-            '& .MuiDataGrid-cell': {
-              textAlign: 'center'
+            '& .odd-row': {
+              backgroundColor: '#ffffff',
+              '&:hover': { backgroundColor: '#f5f5f5' },
             },
-            '& .MuiDataGrid-columnHeaders': {
-              backgroundColor: '#f9f9f9'
-            }
+            '& .MuiDataGrid-footerContainer': { borderTop: '2px solid #e0e0e0' },
           }}
         />
       </div>
