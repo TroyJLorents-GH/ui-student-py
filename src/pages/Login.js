@@ -1,70 +1,69 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Box, Paper, Typography, TextField, Button, Alert } from '@mui/material';
+import { useAuth } from '../AuthContext';
 
-const ALLOWED = (process.env.REACT_APP_ALLOWED_EMAILS || '').split(',');
-const PW =  process.env.REACT_APP_MASTER_PASSWORD;
+const baseUrl = process.env.REACT_APP_API_BASE;
 
-export default function Login({ onLogin }) {
-  const [email, setEmail] = useState('');
-  const [pw, setPw] = useState('');
+export default function Login() {
+  const [asurite, setAsurite] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const nav = useNavigate();
+  const { refresh } = useAuth();
 
-  const handleSubmit = e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!ALLOWED.includes(email.toLowerCase())) {
-      setError('This email is not authorized.');
-      return;
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetch(`${baseUrl}/api/dev-impersonate?asurite=${encodeURIComponent(asurite)}`, {
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Login failed');
+      await refresh();
+      nav('/', { replace: true });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    if (pw !== PW) {
-      setError('Wrong password.');
-      return;
-    }
-    onLogin();
-    nav('/dashboard', { replace: true });
   };
 
   return (
-    <form onSubmit={handleSubmit} style={styles.form}>
-      <h2>Login</h2>
-      <div style={styles.demoCredentials}>
-        <p style={styles.demoTitle}>Demo Credentials</p>
-        <p style={styles.demoText}>Email: t@me.com</p>
-        <p style={styles.demoText}>Password: test123</p>
-      </div>
-      {error && <p style={styles.error}>{error}</p>}
-      <div style={styles.field}>
-        <label>Email</label>
-        <input
-          type="email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          required
-          style={styles.input}
-        />
-      </div>
-      <div style={styles.field}>
-        <label>Password</label>
-        <input
-          type="password"
-          value={pw}
-          onChange={e => setPw(e.target.value)}
-          required
-          style={styles.input}
-        />
-      </div>
-      <button type="submit" style={styles.button}>Log In</button>
-    </form>
+    <Box sx={{ maxWidth: 420, mx: 'auto', mt: 8 }}>
+      <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
+        <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
+          Dev Login
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Enter an Employee ID to impersonate a user. This user must exist in the user_access table.
+        </Typography>
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <strong>Portfolio demo:</strong> use <code>jdoe</code> to login.
+        </Alert>
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        <form onSubmit={handleSubmit}>
+          <TextField
+            label="Employee ID"
+            value={asurite}
+            onChange={e => setAsurite(e.target.value)}
+            fullWidth
+            required
+            size="small"
+            sx={{ mb: 2 }}
+            placeholder="e.g. johndoe"
+          />
+          <Button
+            type="submit"
+            variant="contained"
+            fullWidth
+            disabled={!asurite.trim() || loading}
+          >
+            {loading ? 'Logging in...' : 'Impersonate'}
+          </Button>
+        </form>
+      </Paper>
+    </Box>
   );
 }
-
-const styles = {
-  form: { maxWidth: '400px', margin: '40px auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' },
-  field: { marginBottom: '15px', display: 'flex', flexDirection: 'column' },
-  input: { padding: '8px', fontSize: '1rem' },
-  button: { padding: '10px 20px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
-  error: { color: 'red' },
-  demoCredentials: { backgroundColor: '#e3f2fd', padding: '12px', borderRadius: '6px', marginBottom: '20px', border: '1px solid #90caf9' },
-  demoTitle: { fontWeight: 'bold', marginBottom: '8px', marginTop: 0, color: '#1565c0' },
-  demoText: { margin: '4px 0', fontFamily: 'monospace', fontSize: '0.95rem' }
-};

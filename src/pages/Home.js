@@ -1,4 +1,6 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../AuthContext';
 import {
   Container,
   Typography,
@@ -11,30 +13,67 @@ import {
   TableHead,
   TableRow,
   Divider,
+  Button,
 } from '@mui/material';
+import LoginIcon from '@mui/icons-material/Login';
 
 const MODULES = [
-  { label: 'Quick Assign', description: 'Add or update a single student assignment with all position options.' },
-  { label: 'Manage Student Assignments', description: 'View and manage all student assignments.' },
-  { label: 'Applications', description: 'Review applicant pools and status for TA/Grader/IA roles.' },
-  { label: 'Student Summary', description: 'At-a-glance student assignments with editable features.' },
+  { label: 'Quick Assign', description: 'Add or update a single student assignment with all position options (Program Chairs).' },
+  { label: 'Faculty Grader Assign', description: 'Quickly assign Graders only - streamlined for faculty use.' },
   { label: 'Bulk Upload', description: 'Upload spreadsheets to create or update many assignments at once.' },
   { label: 'Student Assignment Dashboard', description: 'Your course-specific roster of students, roles, and hours.' },
-  { label: 'Master Dashboard', description: 'Unified overview of students and assignments across all courses.' },
+  { label: 'Program Chair Dashboard', description: 'Manage your uploaded assignments - edit, delete, or add new ones.' },
+  { label: 'Faculty Grader Dashboard', description: 'View and manage only your Grader assignments.' },
+  { label: 'Applications (Masters/PhD)', description: 'Review applicant pools and status for TA/Grader/IA roles.' },
+  { label: 'Student Workload Summary', description: 'At-a-glance student assignments with editable features.' },
+  { label: 'HR Master Dashboard', description: 'Unified overview of students and assignments across all courses for HR.' },
 ];
 
 export default function Home() {
+  const { asurite, loading } = useAuth();
+  const nav = useNavigate();
+  const isAuthenticated = !!asurite;
+
   return (
     <Container maxWidth="lg" sx={{ py: 8 }}>
       {/* Header */}
       <Box textAlign="center" sx={{ mb: 6 }}>
-        <Typography variant="h4" fontWeight={700} color="#1d498c">
-          Student Assignment Management System
+        <Typography variant="h4" fontWeight={700} color="#8c1d40">
+          Student Assignment Management System (SAMS)
         </Typography>
         <Typography variant="body1" sx={{ mt: 1.5, color: 'text.secondary' }}>
-          Manage student TA/Grader/IA assignments and workloads.
+          SAMS streamlines how faculty and staff review applicants, create TA/Grader/IA assignments,
+          and manage student workloads.
+        </Typography>
+        <Typography variant="body2" sx={{ mt: 0.5, color: 'text.secondary' }}>
+          Login is currently using a development flow.
         </Typography>
       </Box>
+
+      {/* Login prompt (shown if unauthenticated) */}
+      {!isAuthenticated && (
+        <Paper variant="outlined" sx={{ p: 3, mb: 5, textAlign: 'center' }}>
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            You're not logged in
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Log in to access SAMS modules available to you.
+          </Typography>
+
+          <Button
+            disabled={loading}
+            variant="contained"
+            startIcon={<LoginIcon />}
+            onClick={() => nav('/login')}
+            sx={{
+              backgroundColor: '#8c1d40',
+              '&:hover': { backgroundColor: '#701831' },
+            }}
+          >
+            Dev Login
+          </Button>
+        </Paper>
+      )}
 
       {/* Module list */}
       <Box>
@@ -62,6 +101,16 @@ export default function Home() {
           </Table>
         </TableContainer>
       </Box>
+
+      {/* Logged in note */}
+      {isAuthenticated && (
+        <Typography
+          variant="caption"
+          sx={{ mt: 3, display: 'block', color: 'text.secondary', textAlign: 'center' }}
+        >
+          Welcome, {asurite}.
+        </Typography>
+      )}
     </Container>
   );
 }

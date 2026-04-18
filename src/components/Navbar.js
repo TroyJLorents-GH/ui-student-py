@@ -1,7 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-  Menu,
   ChevronLeft,
   ChevronRight,
   Home,
@@ -10,11 +9,21 @@ import {
   Upload,
   LayoutDashboard,
   FileUser,
-  Zap
+  Zap,
+  Users,
+  ClipboardList,
+  Shield,
+  GraduationCap,
+  FolderUp,
+  UserPlus
 } from "lucide-react";
+import { useAuth } from '../AuthContext';
 
-export default function Navbar({ collapsed, setCollapsed, isAuthenticated, handleLogout }) {
+export default function Navbar({ collapsed, setCollapsed }) {
+  const { asurite, isAdmin, perms, logout } = useAuth();
   const sidebarWidth = collapsed ? 60 : 250;
+
+  const hasPerm = (flag) => isAdmin || perms[flag];
 
   return (
     <div style={{
@@ -47,76 +56,93 @@ export default function Navbar({ collapsed, setCollapsed, isAuthenticated, handl
         {collapsed ? <ChevronRight /> : <ChevronLeft />}
       </button>
 
-      <nav style={{ flex: 1 }}>
+      {/* User info */}
+      {!collapsed && asurite && (
+        <div style={{ padding: '0 18px 12px', fontSize: 13, opacity: 0.8, borderBottom: '1px solid rgba(255,255,255,0.15)', marginBottom: 8 }}>
+          Logged in as <b>{asurite}</b>
+        </div>
+      )}
+
+      <nav style={{ flex: 1, overflowY: 'auto' }}>
         <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-          <li>
-            <NavLink to="/" end style={({ isActive }) => linkStyle(collapsed, isActive)}>
-              <Home size={22} />
-              {!collapsed && <span>Home</span>}
-            </NavLink>
-          </li>
-          <li>
-            <NavLink to="/quick-assign" style={({ isActive }) => linkStyle(collapsed, isActive)}>
-              <Zap size={22} />
-              {!collapsed && <span>Quick Assign</span>}
-            </NavLink>
-          </li>
-          {/* <li>
-            <NavLink to="/manage-assignments" style={({ isActive }) => linkStyle(collapsed, isActive)}>
-              <Users size={22} />
-              {!collapsed && <span>Manage Student Assignments</span>}
-            </NavLink>
-          </li> */}
-          <li>
-            <NavLink to="/applications" style={({ isActive }) => linkStyle(collapsed, isActive)}>
-              <Menu size={22} />
-              {!collapsed && <span>Applications</span>}
-            </NavLink>
-          </li>
-          <li>
-            <NavLink to="/student-summary" style={({ isActive }) => linkStyle(collapsed, isActive)}>
-              <FileUser size={22} />
-              {!collapsed && <span>Student Summary</span>}
-            </NavLink>
-          </li>
-          <li>
-            <NavLink to="/bulk-upload" style={({ isActive }) => linkStyle(collapsed, isActive)}>
-              <Upload size={22} />
-              {!collapsed && <span>Bulk Upload</span>}
-            </NavLink>
-          </li>
-          <li>
-            <NavLink to="/faculty-dashboard" style={({ isActive }) => linkStyle(collapsed, isActive)}>
-              <LayoutDashboard size={22} />
-              {!collapsed && <span>Student Assignment Dashboard</span>}
-            </NavLink>
-          </li>
-          {!isAuthenticated ? (
-            <li>
-              <NavLink to="/login" style={({ isActive }) => linkStyle(collapsed, isActive)}>
-                <LogIn size={22} />
-                {!collapsed && <span>Login</span>}
-              </NavLink>
-            </li>
-          ) : (
+          <NavItem to="/" icon={<Home size={22} />} label="Home" collapsed={collapsed} end />
+
+          {hasPerm('assignment_adder') && (
+            <NavItem to="/quick-assign" icon={<Zap size={22} />} label="Quick Assign" collapsed={collapsed} />
+          )}
+
+          {hasPerm('faculty_quickassign') && (
+            <NavItem to="/faculty-quick-assign" icon={<UserPlus size={22} />} label="Grader Quick Assign" collapsed={collapsed} />
+          )}
+
+          {hasPerm('applications') && (
+            <NavItem to="/applications" icon={<ClipboardList size={22} />} label="Applications" collapsed={collapsed} />
+          )}
+
+          {hasPerm('student_summary_page') && (
+            <NavItem to="/student-summary" icon={<FileUser size={22} />} label="Student Summary" collapsed={collapsed} />
+          )}
+
+          {hasPerm('bulk_upload_assignments') && (
+            <NavItem to="/bulk-upload" icon={<Upload size={22} />} label="Bulk Upload" collapsed={collapsed} />
+          )}
+
+          {hasPerm('faculty_dashboard') && (
+            <NavItem to="/faculty-dashboard" icon={<LayoutDashboard size={22} />} label="Faculty Dashboard" collapsed={collapsed} />
+          )}
+
+          {hasPerm('manage_assignments') && (
+            <NavItem to="/manage-assignments" icon={<Users size={22} />} label="Manage Assignments" collapsed={collapsed} />
+          )}
+
+          {hasPerm('program_chair_uploads') && (
+            <NavItem to="/program-chair-uploads" icon={<FolderUp size={22} />} label="My Uploads" collapsed={collapsed} />
+          )}
+
+          {hasPerm('faculty_grader_uploads') && (
+            <NavItem to="/faculty-grader-uploads" icon={<GraduationCap size={22} />} label="Grader Uploads" collapsed={collapsed} />
+          )}
+
+          {hasPerm('master_dashboard') && (
+            <NavItem to="/dashboard" icon={<LayoutDashboard size={22} />} label="Master Dashboard" collapsed={collapsed} />
+          )}
+
+          {isAdmin && (
             <>
-              <li>
-                <NavLink to="/dashboard" style={({ isActive }) => linkStyle(collapsed, isActive)}>
-                  <LayoutDashboard size={22} />
-                  {!collapsed && <span>Master Dashboard</span>}
-                </NavLink>
-              </li>
-              <li>
-                <button onClick={handleLogout} style={{ ...linkBase(collapsed), background: "none", border: "none" }}>
-                  <LogOut size={22} />
-                  {!collapsed && <span>Logout</span>}
-                </button>
-              </li>
+              {!collapsed && (
+                <li style={{ padding: '12px 18px 4px', fontSize: 11, textTransform: 'uppercase', opacity: 0.5, letterSpacing: 1 }}>
+                  Admin
+                </li>
+              )}
+              <NavItem to="/admin-dashboard" icon={<Shield size={22} />} label="Admin Dashboard" collapsed={collapsed} />
+              <NavItem to="/admin" icon={<Shield size={22} />} label="Admin Panel" collapsed={collapsed} />
             </>
+          )}
+
+          {!asurite ? (
+            <NavItem to="/login" icon={<LogIn size={22} />} label="Login" collapsed={collapsed} />
+          ) : (
+            <li>
+              <button onClick={logout} style={{ ...linkBase(collapsed), background: "none", border: "none", width: '100%' }}>
+                <LogOut size={22} />
+                {!collapsed && <span>Logout</span>}
+              </button>
+            </li>
           )}
         </ul>
       </nav>
     </div>
+  );
+}
+
+function NavItem({ to, icon, label, collapsed, end }) {
+  return (
+    <li>
+      <NavLink to={to} end={end} style={({ isActive }) => linkStyle(collapsed, isActive)}>
+        {icon}
+        {!collapsed && <span>{label}</span>}
+      </NavLink>
+    </li>
   );
 }
 
