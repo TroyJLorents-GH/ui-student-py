@@ -6,20 +6,22 @@ import {
   Snackbar, Alert, Divider, Stack, AlertTitle, Card, CardContent, LinearProgress
 } from '@mui/material';
 
-// Helper function to get color based on remaining hours
-const getSessionColor = (remaining) => {
+// Helper function to get color based on remaining hours (threshold scales with cap)
+const getSessionColor = (remaining, cap = 20) => {
   if (remaining === 0) return { main: '#d32f2f', light: '#ffebee', text: '#c62828' }; // Red
-  if (remaining <= 10) return { main: '#f57c00', light: '#fff3e0', text: '#e65100' }; // Orange/Yellow
+  if (remaining <= cap / 2) return { main: '#f57c00', light: '#fff3e0', text: '#e65100' }; // Orange/Yellow
   return { main: '#2e7d32', light: '#e8f5e9', text: '#1b5e20' }; // Green
 };
 
-// Calculate progress percentage (hours used out of 20)
-const getProgressValue = (remaining) => ((20 - remaining) / 20) * 100;
+// Calculate progress percentage (hours used out of cap)
+const getProgressValue = (remaining, cap = 20) => ((cap - remaining) / cap) * 100;
 
-const baseUrl = process.env.REACT_APP_API_BASE;
+
+
+const baseUrl = process.env.REACT_APP_API_URL;
 
 if (!baseUrl) {
-  console.error("REACT_APP_API_BASE is not defined. Make sure it's set in your .env file.");
+  console.error("REACT_APP_API_URL is not defined. Make sure it's set in your .env file.");
 }
 
 const StudentLookup = ({ setStudentData, setSessionHours }) => {
@@ -27,8 +29,10 @@ const StudentLookup = ({ setStudentData, setSessionHours }) => {
   const [localStudentData, setLocalStudentData] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
   const [localSessionHours, setLocalSessionHours] = useState(null);
+  // const [showAddForm, setShowAddForm] = useState(false); // Adding a student
+
+
 
   const handleStudentSearch = async () => {
     setError('');
@@ -68,29 +72,9 @@ const StudentLookup = ({ setStudentData, setSessionHours }) => {
           const res = await fetch(`${baseUrl}/api/StudentClassAssignment/totalhours/${localStudentData.Student_ID}`);
           if (!res.ok) throw new Error('Failed to fetch assigned hours');
           const data = await res.json();
-
-          // Handle both session-based response and simple total response
-          if (typeof data === 'object' && data.remainingA !== undefined) {
-            // Session-based hours: { hoursA, hoursB, hoursC, remainingA, remainingB, remainingC, total }
-            setLocalSessionHours(data);
-            if (setSessionHours) setSessionHours(data);
-          } else {
-            // Simple total hours (number) - convert to session format for compatibility
-            const total = typeof data === 'number' ? data : 0;
-            const remaining = Math.max(20 - total, 0);
-            const sessionData = {
-              total,
-              remaining,
-              remainingA: remaining,
-              remainingB: remaining,
-              remainingC: remaining,
-              hoursA: total,
-              hoursB: total,
-              hoursC: total,
-            };
-            setLocalSessionHours(sessionData);
-            if (setSessionHours) setSessionHours(sessionData);
-          }
+          // data: { hoursA, hoursB, hoursC, remainingA, remainingB, remainingC, total }
+          setLocalSessionHours(data);
+          if (setSessionHours) setSessionHours(data);
         } catch (err) {
           console.error(err);
           setLocalSessionHours(null);
@@ -101,7 +85,7 @@ const StudentLookup = ({ setStudentData, setSessionHours }) => {
     }
   }, [localStudentData, setSessionHours]);
 
-  const toggleAddForm = () => setShowAddForm(prev => !prev);
+  //const toggleAddForm = () => setShowAddForm(prev => !prev);
 
   return (
     <Box>
@@ -122,15 +106,20 @@ const StudentLookup = ({ setStudentData, setSessionHours }) => {
           />
         </Grid>
         <Grid item xs={6} md={2}>
-          <Button variant="contained" color="primary" fullWidth onClick={handleStudentSearch} disabled={loading}>
+          <Button variant="contained" 
+          sx={{
+              backgroundColor: '#8c1d40',
+              '&:hover': { backgroundColor: '#701831' },
+            }}
+           fullWidth onClick={handleStudentSearch} disabled={loading}>
             Search
           </Button>
         </Grid>
-        <Grid item xs={6} md={2}>
+        {/* <Grid item xs={6} md={2}>
           <Button variant="contained" color="success" fullWidth onClick={toggleAddForm}>
             {showAddForm ? 'Hide Add Student' : 'Add Student'}
           </Button>
-        </Grid>
+        </Grid> */}
       </Grid>
 
       {loading && <Typography mt={2}>Loading student...</Typography>}
@@ -151,7 +140,7 @@ const StudentLookup = ({ setStudentData, setSessionHours }) => {
           {localSessionHours !== null && (
             <Box sx={{ mt: 3 }}>
               <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold', textAlign: 'center' }}>
-                Remaining Hours by Session
+                Students Work Hours Available by Session
               </Typography>
               <Stack direction="row" spacing={2} justifyContent="center">
                 {[
@@ -159,7 +148,8 @@ const StudentLookup = ({ setStudentData, setSessionHours }) => {
                   { label: 'Session B', remaining: localSessionHours.remainingB, subtitle: 'Second Half' },
                   { label: 'Session C', remaining: localSessionHours.remainingC, subtitle: 'Full Semester' },
                 ].map((session) => {
-                  const colors = getSessionColor(session.remaining);
+                  const cap = localSessionHours.cap || 20;
+                  const colors = getSessionColor(session.remaining, cap);
                   return (
                     <Card
                       key={session.label}
@@ -179,7 +169,7 @@ const StudentLookup = ({ setStudentData, setSessionHours }) => {
                         </Typography>
                         <LinearProgress
                           variant="determinate"
-                          value={getProgressValue(session.remaining)}
+                          value={getProgressValue(session.remaining, cap)}
                           sx={{
                             height: 6,
                             borderRadius: 3,
@@ -204,18 +194,18 @@ const StudentLookup = ({ setStudentData, setSessionHours }) => {
           {localSessionHours !== null && localSessionHours.remainingA === 0 && localSessionHours.remainingB === 0 && localSessionHours.remainingC === 0 && (
             <Alert severity="error" sx={{ mt: 3 }}>
               <AlertTitle>Cannot Assign Student</AlertTitle>
-              <strong>{localStudentData.First_Name} {localStudentData.Last_Name}</strong> has reached 20 hours for all sessions and cannot be assigned to any additional positions.
+              <strong>{localStudentData.First_Name} {localStudentData.Last_Name}</strong> has reached {localSessionHours.cap || 20} hours for all sessions and cannot be assigned to any additional positions.
             </Alert>
           )}
         </Paper>
       )}
 
-      {showAddForm && (
+      {/* {showAddForm && (
         <Paper elevation={1} sx={{ padding: 3, mt: 4, border: '2px dashed #28a745' }}>
           <Typography variant="h5" gutterBottom>Add New Student</Typography>
           <Typography>This is where your Add Student form will go.</Typography>
         </Paper>
-      )}
+      )} */}
 
       <Snackbar
         open={!!error}

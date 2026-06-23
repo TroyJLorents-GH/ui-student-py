@@ -1,138 +1,127 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { DataGridPremium } from '@mui/x-data-grid-premium';
 import {
-  DataGridPro,
-  gridDensitySelector,
-  ToolbarButton,
-  useGridApiContext,
-  useGridSelector,
-  GridToolbarContainer,
-  GridToolbarColumnsButton,
-  GridToolbarFilterButton,
-  GridToolbarExport,
-  GridToolbarQuickFilter,
-} from '@mui/x-data-grid-pro';
-import {
-  Paper, Typography, Box, MenuItem, FormControl, Select, InputLabel,
-  Chip, Divider, Tooltip, Menu, ListItemIcon, ListItemText
+  Paper,
+  Typography,
+  Box,
+  FormControl,
+  Select,
+  MenuItem,
+  InputLabel,
+  Button,
+  Chip,
 } from '@mui/material';
-import CheckIcon from '@mui/icons-material/Check';
-import SettingsIcon from '@mui/icons-material/Settings';
-import ViewColumnIcon from '@mui/icons-material/ViewColumn';
+import { useTheme } from '@mui/material/styles';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import { CustomToolbarWithPivot, getDataGridSx } from '../utils/dataGridStyles';
 
-const baseUrl = process.env.REACT_APP_API_BASE;
-if (!baseUrl) console.error("REACT_APP_API_BASE is not defined. Make sure it's set in your .env file.");
+const baseUrl = process.env.REACT_APP_API_URL;
+if (!baseUrl) console.error("REACT_APP_API_URL is not defined.");
 
-const DENSITY_OPTIONS = [
-  { label: 'Compact density', value: 'compact' },
-  { label: 'Standard density', value: 'standard' },
-  { label: 'Comfortable density', value: 'comfortable' },
-];
+const ENDPOINTS = {
+  Masters: `${baseUrl}/api/MastersApplication`,
+  PhD: `${baseUrl}/api/PhdApplication`,
+};
 
-function CustomToolbar() {
-  const apiRef = useGridApiContext();
-  const density = useGridSelector(apiRef, gridDensitySelector);
-  const [densityMenuOpen, setDensityMenuOpen] = useState(false);
-  const densityMenuTriggerRef = useRef(null);
+export default function ApplicationList() {
+  const theme = useTheme();
+  const dataGridSx = useMemo(() => getDataGridSx(theme), [theme]);
 
-  return (
-    <GridToolbarContainer>
-      <GridToolbarColumnsButton />
-      <GridToolbarFilterButton />
-      <GridToolbarExport />
-      <GridToolbarQuickFilter />
-      <Tooltip title="Adjust row density">
-        <ToolbarButton
-          ref={densityMenuTriggerRef}
-          id="density-menu-trigger"
-          aria-controls="density-menu"
-          aria-haspopup="true"
-          aria-expanded={densityMenuOpen ? 'true' : undefined}
-          onClick={() => setDensityMenuOpen(true)}
-        >
-          <SettingsIcon fontSize="small" />
-        </ToolbarButton>
-      </Tooltip>
-      <Menu
-        id="density-menu"
-        anchorEl={densityMenuTriggerRef.current}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        open={densityMenuOpen}
-        onClose={() => setDensityMenuOpen(false)}
-        slotProps={{ list: { 'aria-labelledby': 'density-menu-trigger' } }}
-      >
-        {DENSITY_OPTIONS.map((option) => (
-          <MenuItem
-            key={option.value}
-            onClick={() => { apiRef.current.setDensity(option.value); setDensityMenuOpen(false); }}
-          >
-            <ListItemIcon>{density === option.value && <CheckIcon fontSize="small" />}</ListItemIcon>
-            <ListItemText>{option.label}</ListItemText>
-          </MenuItem>
-        ))}
-      </Menu>
-    </GridToolbarContainer>
-  );
-}
-
-const ApplicationList = () => {
-  const [applications, setApplications] = useState([]);
-  const [error, setError] = useState('');
+  const [appType, setAppType] = useState('Masters'); // 'Masters' | 'PhD'
+  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [degreeFilter, setDegreeFilter] = useState('');
+  const [error, setError] = useState('');
+  const [columnState, setColumnState] = useState({});
+  const [gridKey, setGridKey] = useState(0);
+  const [paginationModel, setPaginationModel] = useState({ pageSize: 50, page: 0 });
 
+  // Reset columns to default widths
+  const handleResetColumns = () => {
+    setColumnState({});
+    setGridKey(prev => prev + 1); // Force DataGrid to remount
+  };
+
+  // Fetch data
   useEffect(() => {
-    const fetchApplications = async () => {
+    const fetchData = async () => {
       setLoading(true);
       setError('');
       try {
-        const response = await fetch(`${baseUrl}/api/MastersIAGraderApplication/`);
-        if (!response.ok) throw new Error('Failed to fetch applications');
-        const data = await response.json();
-        setApplications(data);
-      } catch (err) {
-        setError(err.message);
+        // Application term — decoupled from .env ACTIVE_TERM so faculty only see
+        // the current recruiting term. Bump this when the next term goes live.
+        const r = await fetch(`${ENDPOINTS[appType]}?term=2267`);
+        if (!r.ok) throw new Error(`Failed to fetch ${appType} applications`);
+        const data = await r.json();
+
+        // Normalize minor field name differences so columns can be shared.
+        const normalized = data.map((d) => ({
+          ...d,
+          ProgrammingLanguages: d.ProgrammingLanguages ?? d.ProgrammingLanguage ?? '',
+          AppType: appType,
+          FullName: d.FirstName && d.LastName ? `${d.FirstName} ${d.LastName}` : d.Name ?? '',
+        }));
+
+        setRows(normalized);
+      } catch (e) {
+        setError(String(e));
       }
       setLoading(false);
     };
-    fetchApplications();
-  }, []);
+    fetchData();
+  }, [appType]);
 
-  const filteredApplications = degreeFilter
-    ? applications.filter(app => app.DegreeProgram === degreeFilter)
-    : applications;
+  // FULL column set = union of Masters + PhD DTOs (plus a couple helpers)
+  const ALL_COLUMNS = useMemo(() => [
+    // Core / common
+    { field: 'Id', headerName: 'ID', headerAlign: 'center', width: 80 },
+    { field: 'Name', headerName: 'Name', headerAlign: 'center', flex: 1, minWidth: 160 },
+    // { field: 'FullName', headerName: 'Full Name', headerAlign: 'center', flex: 1, minWidth: 180 },
+    { field: 'FirstName', headerName: 'First Name', headerAlign: 'center', width: 140 },
+    { field: 'LastName', headerName: 'Last Name', headerAlign: 'center', width: 140 },
+    { field: 'Email', headerName: 'Email', headerAlign: 'center', flex: 1.2, minWidth: 220 },
+    { field: 'ASUEmail', headerName: 'ASU Email', headerAlign: 'center', flex: 1, minWidth: 200 },
+    { field: 'ASU_ID', headerName: 'ASU ID', headerAlign: 'center', width: 120 },
+    { field: 'DegreeProgram', headerName: 'Degree Program', headerAlign: 'center', flex: 1.2, minWidth: 220 },
 
-  const columns = [
-    { field: 'Name', headerName: 'Name', headerAlign: 'center', flex: 1, minWidth: 120 },
-    { field: 'Email', headerName: 'Email', headerAlign: 'center', flex: 1.2, minWidth: 180 },
-    { field: 'ASU10DigitID', headerName: 'ASU ID', headerAlign: 'center', flex: 0.6, minWidth: 100 },
-    { field: 'DegreeProgram', headerName: 'Degree Program', headerAlign: 'center', flex: 1.2, minWidth: 150 },
-    { field: 'GraduateGPA', headerName: 'Grad GPA', headerAlign: 'center', flex: 0.5, minWidth: 100 },
-    { field: 'UndergraduateGPA', headerName: 'UG GPA', headerAlign: 'center', flex: 0.5, minWidth: 100 },
-    { field: 'UndergraduateInstitution', headerName: 'UG Institution', headerAlign: 'center', flex: 1, minWidth: 130 },
-    { field: 'PositionsConsidered', headerName: 'Positions', headerAlign: 'center', flex: 0.8, minWidth: 130 },
-    { field: 'HoursAvailable', headerName: 'Hours Avbl', headerAlign: 'center', flex: 0.6, minWidth: 110 },
-    { field: 'PreferredCourses', headerName: 'Preferred Courses', headerAlign: 'center', flex: 1, minWidth: 150 },
-    { field: 'ProgrammingLanguage', headerName: 'Programming Languages', headerAlign: 'center', flex: 1, minWidth: 150 },
-    { field: 'DissertationProposalStatus', headerName: 'Thesis', headerAlign: 'center', flex: 0.8, minWidth: 100 },
+    // Dates
     {
       field: 'ExpectedGraduation',
       headerName: 'Expected Grad',
       headerAlign: 'center',
-      flex: 0.6,
-      minWidth: 120,
+      width: 140,
       renderCell: (params) => {
-        const date = new Date(params.value);
+        const v = params.value;
+        if (!v) return '';
+        const date = new Date(v);
         if (isNaN(date.getTime())) return 'Invalid Date';
         return `${date.getMonth() + 1}/${date.getFullYear()}`;
       }
     },
+
+    // Academics
+    { field: 'GraduateGPA', headerName: 'Grad GPA', headerAlign: 'center', width: 110 },
+    { field: 'UndergraduateGPA', headerName: 'UG GPA', headerAlign: 'center', width: 110 },
+    { field: 'UndergraduateInstitution', headerName: 'UG Institution', headerAlign: 'center', flex: 1, minWidth: 220 },
+    { field: 'StartOfPhdYear', headerName: 'Start of PhD Year', headerAlign: 'center', width: 160 }, // PhD-only
+
+    // Work prefs
+    { field: 'PositionsConsidered', headerName: 'Positions', headerAlign: 'center', width: 180 },
+    { field: 'HoursAvailable', headerName: 'Hours Available', headerAlign: 'center', width: 140 },
+    { field: 'PreferredCourses', headerName: 'Preferred Courses', headerAlign: 'center', flex: 1, minWidth: 220 },
+    { field: 'ProgrammingLanguages', headerName: 'Programming Languages', headerAlign: 'center', flex: 1, minWidth: 220 },
+
+    // Misc assessments / milestones
+    { field: 'TASpeakTestScore', headerName: 'TA Speak / iBT', headerAlign: 'center', width: 160 },
+    { field: 'ThesisProposalStatus', headerName: 'Thesis/Proposal', headerAlign: 'center', width: 180 },
+    { field: 'ComprehensiveExam', headerName: 'Comprehensive Exam', headerAlign: 'center', width: 180 }, // PhD-only
+    { field: 'ResearchAccomplishments', headerName: 'Research Accomplishments', headerAlign: 'center', flex: 1.2, minWidth: 260 }, // PhD-only (long text)
+
+    // Docs
     {
       field: 'TranscriptUrl',
       headerName: 'Transcript',
       headerAlign: 'center',
-      flex: 0.5,
-      minWidth: 100,
+      width: 130,
       renderCell: (params) =>
         params.value ? (
           <a href={params.value} target="_blank" rel="noopener noreferrer">View</a>
@@ -142,112 +131,163 @@ const ApplicationList = () => {
       field: 'ResumeUrl',
       headerName: 'Resume',
       headerAlign: 'center',
-      flex: 0.5,
-      minWidth: 100,
+      width: 120,
       renderCell: (params) =>
         params.value ? (
           <a href={params.value} target="_blank" rel="noopener noreferrer">View</a>
         ) : 'N/A'
-    }
-  ];
+    },
 
-  const getRowClassName = (params) =>
-    params.indexRelativeToCurrentPage % 2 === 0 ? 'even-row' : 'odd-row';
+    // Helper meta
+    { field: 'AppType', headerName: 'App Type', headerAlign: 'center', width: 110 },
+  ], []);
+
+  // PhD-only column fields (memoized to prevent unnecessary recalculations)
+  const PhD_ONLY_FIELDS = useMemo(() => ['StartOfPhdYear', 'ComprehensiveExam', 'ResearchAccomplishments'], []);
+
+  // Filter columns based on application type
+  const FILTERED_COLUMNS = useMemo(() => {
+    return ALL_COLUMNS.filter(col => {
+      // If it's a PhD-only column and we're viewing Masters, hide it
+      if (appType === 'Masters' && PhD_ONLY_FIELDS.includes(col.field)) {
+        return false;
+      }
+      return true;
+    });
+  }, [ALL_COLUMNS, appType, PhD_ONLY_FIELDS]);
+
+  // Defaults to show on first render (everything else is available in Columns menu)
+  const DEFAULT_VISIBLE = useMemo(() => ([
+    'Name',
+    // 'Email',
+    'ASU_ID',
+    'DegreeProgram',
+    'GraduateGPA',
+    'UndergraduateGPA',
+    // 'UndergraduateInstitution',
+    'PositionsConsidered',
+    'HoursAvailable',
+    'PreferredCourses',
+    'ProgrammingLanguages',
+    'ThesisProposalStatus',
+    'ExpectedGraduation',
+    'TranscriptUrl',
+    'ResumeUrl',
+  ]), []);
+
+  // Build the initial visibility model (true for defaults, false otherwise)
+  const initialVisibility = useMemo(() => {
+    const model = {};
+    for (const col of FILTERED_COLUMNS) {
+      model[col.field] = DEFAULT_VISIBLE.includes(col.field);
+    }
+    return model;
+  }, [FILTERED_COLUMNS, DEFAULT_VISIBLE]);
+
+  // Striped rows function
+  const getRowClassName = (params) => {
+    return params.indexRelativeToCurrentPage % 2 === 0 ? 'even-row' : 'odd-row';
+  };
 
   return (
-    <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+    <Paper elevation={3} sx={{ padding: 3, margin: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-            Masters Application List
+            {appType} Application List
           </Typography>
           <Chip
-            label={`${filteredApplications.length} applicant${filteredApplications.length !== 1 ? 's' : ''}`}
+            label={`${rows.length} records`}
             size="small"
-            color="primary"
             variant="outlined"
+            color="primary"
           />
         </Box>
-
-        <FormControl size="small" sx={{ minWidth: 260 }}>
-          <InputLabel>Filter by Degree Program</InputLabel>
-          <Select
-            value={degreeFilter}
-            label="Filter by Degree Program"
-            onChange={(e) => setDegreeFilter(e.target.value)}
-          >
-            <MenuItem value="">All Programs</MenuItem>
-            <MenuItem value="M.S. in Software Engineering">M.S. in Software Engineering</MenuItem>
-            <MenuItem value="M.S. in Computer Science">M.S. in Computer Science</MenuItem>
-            <MenuItem value="M.S. in Computer Engineering- CS">M.S. in Computer Engineering- CS</MenuItem>
-            <MenuItem value="M.S. in Computer Engineering- EE">M.S. in Computer Engineering- EE</MenuItem>
-            <MenuItem value="M.C.S. Master of Computer Science on ground">M.C.S. on-ground</MenuItem>
-            <MenuItem value="M.C.S. Master of Computer Science online">M.C.S. online</MenuItem>
-            <MenuItem value="M.S. Industrial Engineering">M.S. Industrial Engineering</MenuItem>
-            <MenuItem value="M.S. in Robotics and Autonomous Systems- AI">M.S. Robotics AI</MenuItem>
-            <MenuItem value="Other">Other</MenuItem>
-          </Select>
-        </FormControl>
+        <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main', fontStyle: 'italic' }}>
+          Summer 2026
+        </Typography>
       </Box>
 
-      <Typography variant="body2" sx={{ opacity: 0.7, mb: 2 }}>
-        Tip: Click the <b>Columns</b>{' '}
-        <ViewColumnIcon sx={{ fontSize: '1.25rem', verticalAlign: 'text-bottom', display: 'inline' }} />{' '}
-        button to show/hide fields. Use <b>Quick Search</b> to filter by name, email, or any text.
+      <Box mb={2} display="flex" gap={2} flexWrap="wrap" alignItems="center">
+        <FormControl sx={{ minWidth: 240 }}>
+          <InputLabel>Application Type</InputLabel>
+          <Select
+            value={appType}
+            label="Application Type"
+            onChange={(e) => setAppType(e.target.value)}
+          >
+            <MenuItem value="Masters">Masters Applications</MenuItem>
+            <MenuItem value="PhD">PhD Applications</MenuItem>
+          </Select>
+        </FormControl>
+
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<RestartAltIcon />}
+          onClick={handleResetColumns}
+        >
+          Reset Columns
+        </Button>
+      </Box>
+
+      {/* Helper text */}
+      <Typography variant="body2" sx={{ opacity: 0.8, mb: 2 }}>
+        Tip: Click the <b>Columns</b> button in the toolbar to show/hide fields or drag to reorder.
       </Typography>
 
-      <Divider sx={{ mb: 2 }} />
+      <Typography variant="body2" sx={{ opacity: 0.9, mb: 2, fontStyle: 'italic' }}>
+        Note: When downloading or printing, only the columns currently visible on the page will be included. Adjust your visible columns before exporting.
+      </Typography>
 
       {error && (
-        <Typography color="error" mb={2}>Error: {error}</Typography>
+        <Typography color="error" mb={2}>
+          Error: {error}
+        </Typography>
       )}
 
-      <div style={{ height: 'calc(100vh - 260px)', width: '100%' }}>
-        <DataGridPro
-          rows={filteredApplications}
-          columns={columns}
+      <div style={{ height: '1750px', width: '100%' }}>
+        <DataGridPremium
+          key={`${gridKey}-${appType}`}
+          rows={rows}
+          columns={FILTERED_COLUMNS}
           getRowId={(row) => row.Id}
           getRowClassName={getRowClassName}
           loading={loading}
-          pagination
+          // Column sizing state
+          columnSizingModel={columnState}
+          onColumnSizingModelChange={(newState) => setColumnState(newState)}
+          // initial config
           initialState={{
-            pagination: { paginationModel: { pageSize: 50, page: 0 } },
             density: 'standard',
-            columns: {
-              columnVisibilityModel: {
-                UndergraduateInstitution: false,
-                DissertationProposalStatus: false,
+            columns: { columnVisibilityModel: initialVisibility },
+            // Pivot starting layout — opt-in via the Pivot button in the toolbar.
+            pivoting: {
+              active: false,
+              panelOpen: false,
+              model: {
+                rows: [{ field: 'DegreeProgram' }],
+                columns: [{ field: 'PositionsConsidered' }],
+                values: [{ field: 'Name', aggFunc: 'size' }],
               },
             },
           }}
-          pageSizeOptions={[25, 50, 100, { value: filteredApplications.length || 1, label: 'All' }]}
-          disableSelectionOnClick
-          allowColumnReordering
-          slots={{ toolbar: CustomToolbar }}
+          // DataGridPro v6+: use `pageSizeOptions`
+          pageSizeOptions={[25, 50, 100, { value: rows.length, label: 'All' }]}
+          paginationModel={paginationModel}
+          onPaginationModelChange={setPaginationModel}
+          // UX
+          pagination
+          slots={{
+            toolbar: CustomToolbarWithPivot,
+          }}
           showToolbar
           headerFilters
-          sx={{
-            border: '1px solid #e0e0e0',
-            borderRadius: 1,
-            '& .MuiDataGrid-toolbar': { justifyContent: 'flex-start' },
-            '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 'bold', fontSize: '1.05rem' },
-            '& .MuiDataGrid-cell': { textAlign: 'center' },
-            '& .MuiDataGrid-columnHeaders': { backgroundColor: '#f9f9f9' },
-            '& .even-row': {
-              backgroundColor: '#fafafa',
-              '&:hover': { backgroundColor: '#f0f0f0' },
-            },
-            '& .odd-row': {
-              backgroundColor: '#ffffff',
-              '&:hover': { backgroundColor: '#f5f5f5' },
-            },
-            '& .MuiDataGrid-footerContainer': { borderTop: '2px solid #e0e0e0' },
-          }}
+          disableSelectionOnClick
+          allowColumnReordering
+          sx={dataGridSx}
         />
       </div>
     </Paper>
   );
-};
-
-export default ApplicationList;
+}

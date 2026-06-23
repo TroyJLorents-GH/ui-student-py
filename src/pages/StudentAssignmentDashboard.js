@@ -1,17 +1,6 @@
-// src/pages/StudentAssignmentDashboard.js
-import React, { useEffect, useState, useMemo, useRef } from 'react';
-import {
-  DataGridPro,
-  gridDensitySelector,
-  ToolbarButton,
-  useGridApiContext,
-  useGridSelector,
-  GridToolbarContainer,
-  GridToolbarColumnsButton,
-  GridToolbarFilterButton,
-  GridToolbarExport,
-  GridToolbarQuickFilter,
-} from '@mui/x-data-grid-pro';
+// src/pages/StudentAssignmentDashboard.jsx
+import React, { useEffect, useState, useMemo } from 'react';
+import { DataGridPro } from '@mui/x-data-grid-pro';
 import {
   Paper,
   Typography,
@@ -20,84 +9,13 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Tooltip,
-  Menu,
-  ListItemIcon,
-  ListItemText,
   Chip,
-  Divider,
 } from '@mui/material';
-import CheckIcon from '@mui/icons-material/Check';
-import SettingsIcon from '@mui/icons-material/Settings';
+import { useTheme } from '@mui/material/styles';
 import ViewColumnIcon from '@mui/icons-material/ViewColumn';
+import { CustomToolbar, getDataGridSx } from '../utils/dataGridStyles';
 
-const baseUrl = process.env.REACT_APP_API_BASE;
-
-// Density options
-const DENSITY_OPTIONS = [
-  { label: 'Compact density', value: 'compact' },
-  { label: 'Standard density', value: 'standard' },
-  { label: 'Comfortable density', value: 'comfortable' },
-];
-
-// Custom Toolbar with Density Selector
-function CustomToolbar() {
-  const apiRef = useGridApiContext();
-  const density = useGridSelector(apiRef, gridDensitySelector);
-  const [densityMenuOpen, setDensityMenuOpen] = useState(false);
-  const densityMenuTriggerRef = useRef(null);
-
-  return (
-    <GridToolbarContainer>
-      <GridToolbarColumnsButton />
-      <GridToolbarFilterButton />
-      <GridToolbarExport />
-      <GridToolbarQuickFilter />
-
-      <Tooltip title="Adjust row density">
-        <ToolbarButton
-          ref={densityMenuTriggerRef}
-          id="density-menu-trigger"
-          aria-controls="density-menu"
-          aria-haspopup="true"
-          aria-expanded={densityMenuOpen ? 'true' : undefined}
-          onClick={() => setDensityMenuOpen(true)}
-        >
-          <SettingsIcon fontSize="small" />
-        </ToolbarButton>
-      </Tooltip>
-
-      <Menu
-        id="density-menu"
-        anchorEl={densityMenuTriggerRef.current}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        open={densityMenuOpen}
-        onClose={() => setDensityMenuOpen(false)}
-        slotProps={{
-          list: {
-            'aria-labelledby': 'density-menu-trigger',
-          },
-        }}
-      >
-        {DENSITY_OPTIONS.map((option) => (
-          <MenuItem
-            key={option.value}
-            onClick={() => {
-              apiRef.current.setDensity(option.value);
-              setDensityMenuOpen(false);
-            }}
-          >
-            <ListItemIcon>
-              {density === option.value && <CheckIcon fontSize="small" />}
-            </ListItemIcon>
-            <ListItemText>{option.label}</ListItemText>
-          </MenuItem>
-        ))}
-      </Menu>
-    </GridToolbarContainer>
-  );
-}
+const baseUrl = process.env.REACT_APP_API_URL;
 
 // Filter options for Position
 const POSITION_OPTIONS = [
@@ -106,34 +24,51 @@ const POSITION_OPTIONS = [
   'Grader',
   'IA',
   'TA (GSA) 1 credit',
+  'TA (GSA) 1 credit +',
 ];
 
+
 export default function StudentAssignmentDashboard() {
+  const theme = useTheme();
+  const dataGridSx = useMemo(() => getDataGridSx(theme), [theme]);
+
   const [rows, setRows] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  // const [filteredRows, setFilteredRows] = useState([]);
   const [positionFilter, setPositionFilter] = useState('All');
 
+  // Using flex for responsive auto-resize layout (no horizontal scroll)
   const columns = [
-    { field: 'studentName', headerName: 'Student Name', headerAlign: 'center', flex: 1, minWidth: 150 },
-    { field: 'student_ID', headerName: 'ASU ID', headerAlign: 'center', width: 140 },
-    { field: 'asuRite', headerName: 'ASUrite', headerAlign: 'center', width: 110 },
-    { field: 'position', headerName: 'Position', headerAlign: 'center', width: 150 },
-    { field: 'weeklyHours', headerName: 'Hours', headerAlign: 'center', width: 90, type: 'number' },
-    { field: 'fultonFellow', headerName: 'Fulton Scholar', headerAlign: 'center', width: 130 },
-    { field: 'email', headerName: 'Email', headerAlign: 'center', flex: 1, minWidth: 160 },
+    { field: 'studentName', headerName: 'Student Name', headerAlign: 'center', flex: 1.5, minWidth: 130 },
+    { field: 'student_ID', headerName: 'ASU ID', headerAlign: 'center', flex: 0.9, minWidth: 100 },
+    { field: 'asuRite', headerName: 'ASUrite', headerAlign: 'center', flex: 0.8, minWidth: 90 },
+    { field: 'position', headerName: 'Position', headerAlign: 'center', flex: 1, minWidth: 110 },
+    { field: 'weeklyHours', headerName: 'Hours', headerAlign: 'center', flex: 0.5, minWidth: 60, type: 'number' },
+    { field: 'fultonFellow', headerName: 'Fulton Scholar', headerAlign: 'center', flex: 0.8, minWidth: 90 },
+    { field: 'email', headerName: 'Email', headerAlign: 'center', flex: 1.4, minWidth: 150 },
     { field: 'educationLevel', headerName: 'Education', headerAlign: 'center', width: 120 },
-    { field: 'instructorName', headerName: 'Instructor Name', headerAlign: 'center', flex: 1, minWidth: 160 },
-    { field: 'subject', headerName: 'Subject', headerAlign: 'center', width: 110 },
-    { field: 'catalogNum', headerName: 'Catalog #', headerAlign: 'center', width: 110, type: 'number' },
-    { field: 'classNum', headerName: 'Class #', headerAlign: 'center', width: 120 },
-    { field: 'classSession', headerName: 'Session', headerAlign: 'center', width: 100 },
+    { field: 'instructorName', headerName: 'Instructor Name', headerAlign: 'center', flex: 1.2, minWidth: 130 },
+    //{ field: 'subject', headerName: 'Subject', headerAlign: 'center', flex: 0.7, minWidth: 80 },
+    //{ field: 'catalogNum', headerName: 'Catalog #', headerAlign: 'center', flex: 0.7, minWidth: 80, type: 'number' },
+    {
+      field: 'course',
+      headerName: 'Course',
+      headerAlign: 'center',
+      flex: 1,
+      minWidth: 120,
+      valueGetter: (value, row) => {
+        return `${row.subject} - ${row.catalogNum}`;
+      }
+    },
+    { field: 'classNum', headerName: 'Class Number', headerAlign: 'center', flex: 0.9, minWidth: 90 },
+    { field: 'classSession', headerName: 'Session', headerAlign: 'center', width: 120 },
     {
       field: 'otherPositions',
       headerName: 'Additional Assignments',
       headerAlign: 'center',
-      flex: 1,
-      minWidth: 160,
+      flex: 1.2,
+      minWidth: 140,
       renderCell: (params) => {
         const value = params.value;
         if (!value) return '-';
@@ -152,15 +87,17 @@ export default function StudentAssignmentDashboard() {
         );
       }
     },
-    { field: 'location', headerName: 'Location', headerAlign: 'center', width: 130 },
-    { field: 'campus', headerName: 'Campus', headerAlign: 'center', width: 120 },
-    { field: 'cum_gpa', headerName: 'Cum GPA', headerAlign: 'center', width: 100 },
-    { field: 'cur_gpa', headerName: 'Cur GPA', headerAlign: 'center', width: 100 },
+    { field: 'location', headerName: 'Location', headerAlign: 'center', flex: 0.7, minWidth: 80 },
+    { field: 'campus', headerName: 'Campus', headerAlign: 'center', flex: 0.7, minWidth: 80 },
+    //{ field: 'cum_gpa', headerName: 'Cum GPA', headerAlign: 'center', flex: 0.6, minWidth: 70 },
+    //{ field: 'cur_gpa', headerName: 'Cur GPA', headerAlign: 'center', flex: 0.6, minWidth: 70 },
+    { field: 'importedBy', headerName: 'Imported By', headerAlign: 'center', width: 110 },
+    // intentionally removed: Cost Center, Compensation, Review, Position Number, Reviewed, Date Created
   ];
 
   useEffect(() => {
     setLoading(true);
-    fetch(`${baseUrl}/api/StudentClassAssignment/`)
+    fetch(`${baseUrl}/api/faculty/student-assignments`, { credentials: 'include' })
       .then(res => {
         if (!res.ok) throw new Error('Failed to load assignments');
         return res.json();
@@ -208,8 +145,10 @@ export default function StudentAssignmentDashboard() {
             location: r.Location,
             campus: r.Campus,
             classNum: r.ClassNum,
+            classSection: r.ClassSection,
             cum_gpa: r.cum_gpa,
             cur_gpa: r.cur_gpa,
+            importedBy: r.ImportedBy || '',
             otherPositions: otherAssignments.length > 0
               ? otherAssignments.map(a => `${a.subject} - ${a.catalogNum} (${a.position})`).join('\n')
               : '',
@@ -225,6 +164,11 @@ export default function StudentAssignmentDashboard() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  // // --- Filter logic ---
+  // const handlePositionChange = (e) => {
+  //   setPositionFilter(e.target.value);
+  // };
 
   const visibleRows = useMemo(() => {
     if (positionFilter === 'All') return rows;
@@ -250,44 +194,40 @@ export default function StudentAssignmentDashboard() {
   }
 
   return (
-    <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-            Student Assignment Dashboard
-          </Typography>
-          <Chip
-            label={`${visibleRows.length} record${visibleRows.length !== 1 ? 's' : ''}`}
-            size="small"
-            color="primary"
-            variant="outlined"
-          />
-        </Box>
+    <Paper elevation={3} sx={{ padding: 3, margin: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+          Student Assignment Dashboard
+        </Typography>
+        <Chip
+          label={`${visibleRows.length} records`}
+          size="small"
+          variant="outlined"
+          color="primary"
+        />
+      </Box>
 
-        {/* Position Filter */}
-        <FormControl size="small" sx={{ minWidth: 200 }}>
-          <InputLabel>Filter by Position</InputLabel>
+      <Box mb={2}>
+        <FormControl sx={{ minWidth: 240 }}>
+          <InputLabel>Position</InputLabel>
           <Select
             value={positionFilter}
-            label="Filter by Position"
+            label="Position"
             onChange={(e) => setPositionFilter(e.target.value)}
           >
             {POSITION_OPTIONS.map((pos) => (
-              <MenuItem key={pos} value={pos}>{pos}</MenuItem>
+              <MenuItem key={pos} value={pos}>
+                {pos}
+              </MenuItem>
             ))}
           </Select>
         </FormControl>
       </Box>
 
-      {/* Helper tip */}
-      <Typography variant="body2" sx={{ opacity: 0.7, mb: 2 }}>
-        Tip: Click the <b>Columns</b>{' '}
-        <ViewColumnIcon sx={{ fontSize: '1.25rem', verticalAlign: 'text-bottom', display: 'inline' }} />{' '}
-        button in the toolbar to show/hide fields or drag to reorder.
+      {/* Helper text */}
+      <Typography variant="body2" sx={{ opacity: 0.8, mb: 2 }}>
+        Tip: Click the <b>Columns</b> <ViewColumnIcon sx={{ fontSize: '1.25rem', verticalAlign: 'text-bottom', display: 'inline' }} /> button in the toolbar to show more fields or drag to reorder.
       </Typography>
-
-      <Divider sx={{ mb: 2 }} />
 
       {error && (
         <Typography color="error" mb={2}>
@@ -295,55 +235,29 @@ export default function StudentAssignmentDashboard() {
         </Typography>
       )}
 
-      <div style={{ height: 'calc(100vh - 260px)', width: '100%' }}>
-        <DataGridPro
-          sx={{
-            border: '1px solid #e0e0e0',
-            borderRadius: 1,
-            '& .MuiDataGrid-toolbar': { justifyContent: 'flex-start' },
-            '& .MuiDataGrid-cell': { textAlign: 'center' },
-            '& .MuiDataGrid-columnHeaders': {
-              backgroundColor: '#f9f9f9',
-              position: 'sticky',
-              top: 0,
-              zIndex: 10,
-            },
-            '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 'bold', fontSize: '1.05em' },
-            '& .even-row': {
-              backgroundColor: '#fafafa',
-              '&:hover': { backgroundColor: '#f0f0f0' },
-            },
-            '& .odd-row': {
-              backgroundColor: '#ffffff',
-              '&:hover': { backgroundColor: '#f5f5f5' },
-            },
-            '& .MuiDataGrid-footerContainer': { borderTop: '2px solid #e0e0e0' },
-          }}
-          rows={visibleRows}
-          columns={columns}
-          getRowClassName={getRowClassName}
-          loading={loading}
-          pagination
-          initialState={{
-            pagination: { paginationModel: { pageSize: 50, page: 0 } },
-            density: 'standard',
-            columns: {
-              columnVisibilityModel: {
-                cum_gpa: false,
-                cur_gpa: false,
-                location: false,
-                campus: false,
-              }
-            },
-          }}
-          pageSizeOptions={[25, 50, 100, { value: visibleRows.length || 1, label: 'All' }]}
-          disableSelectionOnClick
-          allowColumnReordering
-          slots={{ toolbar: CustomToolbar }}
-          showToolbar
-          headerFilters
-        />
-      </div>
+      <div style={{ height: 'calc(100vh - 200px)', width: '100%', minWidth: '100%' }}>
+
+      <DataGridPro
+        sx={dataGridSx}
+        rows={visibleRows}
+        columns={columns}
+        getRowClassName={getRowClassName}
+        loading={loading}
+        pagination
+        initialState={{
+          pagination: { paginationModel: { pageSize: 50, page: 0 } },
+          density: 'standard',
+        }}
+        pageSizeOptions={[25, 50, 100, { value: visibleRows.length, label: 'All' }]}
+        disableSelectionOnClick
+        allowColumnReordering
+        slots={{
+          toolbar: CustomToolbar,
+        }}
+        showToolbar
+        headerFilters
+      />
+    </div>
     </Paper>
   );
 }

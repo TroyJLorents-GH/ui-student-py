@@ -1,5 +1,5 @@
+// src/pages/Home.js
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import {
   Container,
@@ -16,6 +16,8 @@ import {
   Button,
 } from '@mui/material';
 import LoginIcon from '@mui/icons-material/Login';
+import { EventCalendar } from '@mui/x-scheduler/event-calendar';
+import { EVENT_CALENDAR_RESOURCES, EVENT_CALENDAR_EVENTS } from '../constants/importantDates';
 
 const MODULES = [
   { label: 'Quick Assign', description: 'Add or update a single student assignment with all position options (Program Chairs).' },
@@ -25,13 +27,12 @@ const MODULES = [
   { label: 'Program Chair Dashboard', description: 'Manage your uploaded assignments - edit, delete, or add new ones.' },
   { label: 'Faculty Grader Dashboard', description: 'View and manage only your Grader assignments.' },
   { label: 'Applications (Masters/PhD)', description: 'Review applicant pools and status for TA/Grader/IA roles.' },
-  { label: 'Student Workload Summary', description: 'At-a-glance student assignments with editable features.' },
+  { label: 'Edit Student Assignment', description: 'At-a-glance student assignments with editable features.' },
   { label: 'HR Master Dashboard', description: 'Unified overview of students and assignments across all courses for HR.' },
 ];
 
 export default function Home() {
-  const { asurite, loading } = useAuth();
-  const nav = useNavigate();
+  const { asurite, login, loading, USE_CAS, USE_MOCK } = useAuth();
   const isAuthenticated = !!asurite;
 
   return (
@@ -42,19 +43,23 @@ export default function Home() {
           Student Assignment Management System (SAMS)
         </Typography>
         <Typography variant="body1" sx={{ mt: 1.5, color: 'text.secondary' }}>
-          SAMS streamlines how faculty and staff review applicants, create TA/Grader/IA assignments,
+          SAMS streamlines how SCAI faculty and staff review applicants, create TA/Grader/IA assignments,
           and manage student workloads.
         </Typography>
-        <Typography variant="body2" sx={{ mt: 0.5, color: 'text.secondary' }}>
-          Login is currently using a development flow.
-        </Typography>
+
+        {/* Only show the dev note if NOT using CAS */}
+        {!USE_CAS && (
+          <Typography variant="body2" sx={{ mt: 0.5, color: 'text.secondary' }}>
+            Login is currently using a development flow and will be replaced with ASU CAS Single Sign-On (SSO).
+          </Typography>
+        )}
       </Box>
 
       {/* Login prompt (shown if unauthenticated) */}
       {!isAuthenticated && (
         <Paper variant="outlined" sx={{ p: 3, mb: 5, textAlign: 'center' }}>
           <Typography variant="h6" sx={{ mb: 1 }}>
-            You're not logged in
+            You’re not logged in
           </Typography>
           <Typography variant="body2" sx={{ mb: 2 }}>
             Log in to access SAMS modules available to you.
@@ -64,29 +69,50 @@ export default function Home() {
             disabled={loading}
             variant="contained"
             startIcon={<LoginIcon />}
-            onClick={() => nav('/login')}
+            onClick={login}
             sx={{
               backgroundColor: '#8c1d40',
               '&:hover': { backgroundColor: '#701831' },
             }}
           >
-            Dev Login
+            {USE_CAS ? 'Sign in with ASU CAS' : (USE_MOCK ? 'Dev Login (Mock)' : 'Dev Login')}
           </Button>
         </Paper>
       )}
 
+      {/* Important Dates Calendar */}
+      <Box sx={{ mb: 5 }}>
+        <Typography variant="h6" sx={{ mb: 1 }}>
+          Important Dates
+        </Typography>
+        <Divider sx={{ mb: 2 }} />
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, overflow: 'hidden' }}>
+          <Box sx={{ height: 640 }}>
+            <EventCalendar
+              events={EVENT_CALENDAR_EVENTS}
+              resources={EVENT_CALENDAR_RESOURCES}
+              defaultVisibleDate={new Date(2026, 5, 1)}
+              defaultView="month"
+              views={['week', 'month', 'agenda']}
+              defaultPreferences={{ isSidePanelOpen: false }}
+              readOnly
+            />
+          </Box>
+        </Paper>
+      </Box>
+
       {/* Module list */}
       <Box>
         <Typography variant="h6" sx={{ mb: 1 }}>
-          Available Modules
+          Available Pages
         </Typography>
         <Divider sx={{ mb: 2 }} />
 
         <TableContainer component={Paper} variant="outlined">
           <Table>
             <TableHead>
-              <TableRow sx={{ backgroundColor: '#fff' }}>
-                <TableCell sx={{ fontWeight: 'bold' }}>Module</TableCell>
+              <TableRow sx={{ backgroundColor: '#ffff' }}>
+                <TableCell sx={{ fontWeight: 'bold' }}>Pages</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Description</TableCell>
               </TableRow>
             </TableHead>
@@ -108,7 +134,7 @@ export default function Home() {
           variant="caption"
           sx={{ mt: 3, display: 'block', color: 'text.secondary', textAlign: 'center' }}
         >
-          Welcome, {asurite}.
+          Welcome, {asurite || 'faculty member'}.
         </Typography>
       )}
     </Container>

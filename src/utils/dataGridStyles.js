@@ -14,6 +14,9 @@ import {
   GridToolbarExport,
   GridToolbarQuickFilter,
 } from '@mui/x-data-grid-pro';
+// Premium-only: pivot + charts panel triggers. Safe to import here even on pages
+// that still render DataGridPro — only used by the Premium toolbar variants below.
+import { PivotPanelTrigger, ChartsPanelTrigger } from '@mui/x-data-grid-premium';
 import {
   Tooltip,
   Menu,
@@ -23,6 +26,8 @@ import {
 } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import CheckIcon from '@mui/icons-material/Check';
+import PivotTableChartIcon from '@mui/icons-material/PivotTableChart';
+import BarChartIcon from '@mui/icons-material/BarChart';
 
 // Density options for the toolbar menu
 const DENSITY_OPTIONS = [
@@ -32,21 +37,16 @@ const DENSITY_OPTIONS = [
 ];
 
 /**
- * Custom DataGrid toolbar with Columns, Filters, Export, Quick Search, and Density selector.
+ * Density selector button + menu. Shared by all toolbar variants.
  */
-export function CustomToolbar() {
+function DensityMenuButton() {
   const apiRef = useGridApiContext();
   const density = useGridSelector(apiRef, gridDensitySelector);
   const [densityMenuOpen, setDensityMenuOpen] = useState(false);
   const densityMenuTriggerRef = useRef(null);
 
   return (
-    <GridToolbarContainer>
-      <GridToolbarColumnsButton />
-      <GridToolbarFilterButton />
-      <GridToolbarExport />
-      <GridToolbarQuickFilter />
-
+    <>
       <Tooltip title="Adjust row density">
         <ToolbarButton
           ref={densityMenuTriggerRef}
@@ -88,6 +88,71 @@ export function CustomToolbar() {
           </MenuItem>
         ))}
       </Menu>
+    </>
+  );
+}
+
+/**
+ * Custom DataGrid toolbar with Columns, Filters, Export, Quick Search, and Density selector.
+ */
+export function CustomToolbar() {
+  return (
+    <GridToolbarContainer>
+      <GridToolbarColumnsButton />
+      <GridToolbarFilterButton />
+      <GridToolbarExport />
+      <GridToolbarQuickFilter />
+      <DensityMenuButton />
+    </GridToolbarContainer>
+  );
+}
+
+/**
+ * Same as CustomToolbar, plus a Pivot button that opens the pivot panel.
+ * Use ONLY on DataGridPremium grids — GridPivotPanelTrigger requires the
+ * pivot feature, which Pro grids don't have.
+ */
+export function CustomToolbarWithPivot() {
+  return (
+    <GridToolbarContainer>
+      <GridToolbarColumnsButton />
+      <GridToolbarFilterButton />
+      <GridToolbarExport />
+      <GridToolbarQuickFilter />
+      <Tooltip title="Pivot table">
+        <PivotPanelTrigger render={<ToolbarButton />}>
+          <PivotTableChartIcon fontSize="small" />
+        </PivotPanelTrigger>
+      </Tooltip>
+      <DensityMenuButton />
+    </GridToolbarContainer>
+  );
+}
+
+/**
+ * Same as CustomToolbar, plus Pivot AND Charts buttons.
+ * Use ONLY on a DataGridPremium that has `chartsIntegration` enabled and is
+ * wrapped in <GridChartsIntegrationContextProvider> — ChartsPanelTrigger needs
+ * that context, so it must not be used on plain Premium/Pro grids.
+ */
+export function CustomToolbarFull() {
+  return (
+    <GridToolbarContainer>
+      <GridToolbarColumnsButton />
+      <GridToolbarFilterButton />
+      <GridToolbarExport />
+      <GridToolbarQuickFilter />
+      <Tooltip title="Pivot table">
+        <PivotPanelTrigger render={<ToolbarButton />}>
+          <PivotTableChartIcon fontSize="small" />
+        </PivotPanelTrigger>
+      </Tooltip>
+      <Tooltip title="Charts">
+        <ChartsPanelTrigger render={<ToolbarButton />}>
+          <BarChartIcon fontSize="small" />
+        </ChartsPanelTrigger>
+      </Tooltip>
+      <DensityMenuButton />
     </GridToolbarContainer>
   );
 }

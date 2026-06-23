@@ -4,24 +4,9 @@ import {
   Button, Select, MenuItem, Switch, Stack, Snackbar, Alert, Box
 } from '@mui/material';
 import { useAuth } from '../AuthContext';
+import { FLAG_KEYS, flagLabel } from '../constants/permissions';
 
-const API = process.env.REACT_APP_API_BASE;
-
-// Permission flags shown as columns (keep in sync with your DB/model)
-const FLAG_KEYS = [
-  'assignment_adder',
-  'applications',
-  'phd_applications',
-  'student_summary_page',
-  'bulk_upload_assignments',
-  'manage_assignments',
-  'login',
-  'master_dashboard',
-  'faculty_dashboard',
-  'program_chair_uploads',
-  'faculty_quickassign',
-  'faculty_grader_uploads',
-];
+const API = process.env.REACT_APP_API_URL;
 
 // Current roles supported
 const ROLE_OPTIONS = ['admin', 'program_chair', 'faculty_grader', 'custom', 'default'];
@@ -59,6 +44,7 @@ export default function UsersTable() {
 
   const patchUser = useCallback(
     async (asu_id, payload, successMsg = 'Saved') => {
+      // SECURITY: Prevent users from modifying their own account
       if (asu_id.toLowerCase() === asurite?.toLowerCase()) {
         openSnack('Cannot modify your own account. Ask another admin for help.', 'error');
         return;
@@ -79,6 +65,7 @@ export default function UsersTable() {
 
   const deleteUser = useCallback(
     async (asu_id) => {
+      // SECURITY: Prevent users from deleting their own account
       if (asu_id.toLowerCase() === asurite?.toLowerCase()) {
         openSnack('Cannot delete your own account. Ask another admin for help.', 'error');
         return;
@@ -95,6 +82,27 @@ export default function UsersTable() {
     [load, openSnack, asurite]
   );
 
+  // Inline edit save (Position/Title). Returns the row to keep, or throws to revert.
+  const processRowUpdate = useCallback(
+    async (newRow, oldRow) => {
+      if (newRow.position_title === oldRow.position_title) return oldRow; // no change
+      if (newRow.asu_id.toLowerCase() === asurite?.toLowerCase()) {
+        openSnack('Cannot modify your own account. Ask another admin for help.', 'error');
+        return oldRow;
+      }
+      const r = await fetch(`${API}/api/admin/users/${newRow.asu_id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ position_title: newRow.position_title }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      openSnack('Position/Title updated', 'success');
+      return newRow;
+    },
+    [openSnack, asurite],
+  );
+
   const columns = useMemo(() => {
     const nameCol = {
       field: 'name',
@@ -108,6 +116,7 @@ export default function UsersTable() {
       headerName: 'Position/Title',
       width: 200,
       sortable: true,
+      editable: true,
     };
 
     const roleCol = {
@@ -143,7 +152,7 @@ export default function UsersTable() {
 
     const flagCols = FLAG_KEYS.map((k) => ({
       field: k,
-      headerName: k,
+      headerName: flagLabel(k),
       width: 200,
       sortable: true,
       align: 'center',
@@ -156,9 +165,9 @@ export default function UsersTable() {
             disabled={isSelf}
             onChange={async (e) => {
               try {
-                await patchUser(params.row.asu_id, { [k]: e.target.checked }, `${k} updated`);
+                await patchUser(params.row.asu_id, { [k]: e.target.checked }, `${flagLabel(k)} updated`);
               } catch {
-                openSnack(`Failed to update ${k}`, 'error');
+                openSnack(`Failed to update ${flagLabel(k)}`, 'error');
               }
             }}
             title={isSelf ? 'Cannot modify your own permissions' : ''}
@@ -219,6 +228,8 @@ export default function UsersTable() {
           rows={rows}
           columns={columns}
           loading={loading}
+          processRowUpdate={processRowUpdate}
+          onProcessRowUpdateError={() => openSnack('Failed to save Position/Title', 'error')}
           disableRowSelectionOnClick
           pageSizeOptions={[25, 50, 100]}
           initialState={{
@@ -228,6 +239,7 @@ export default function UsersTable() {
           showToolbar
           pagination
           headerFilters
+          // headerAlign="center"
         />
       </div>
       <Snackbar open={snack.open} autoHideDuration={2500} onClose={closeSnack}>

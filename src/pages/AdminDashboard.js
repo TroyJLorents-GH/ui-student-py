@@ -1,23 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { DataGridPro } from '@mui/x-data-grid-pro';
 import {
-  Paper, Typography, Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, FormGroup, FormControlLabel, Checkbox, Snackbar, Alert
+  Paper, Typography, Snackbar, Alert, Box
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import { CustomToolbar, getDataGridSx as getBaseDataGridSx } from '../utils/dataGridStyles';
 
-const baseUrl = process.env.REACT_APP_API_BASE;
+const baseUrl = process.env.REACT_APP_API_URL;
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
 });
-
-const usdPrice = {
-  type: 'number',
-  width: 130,
-  valueFormatter: (value) => currencyFormatter.format(value),
-  cellClassName: 'font-tabular-nums',
-};
 
 function formatToLocal(dbDate) {
   if (!dbDate) return '';
@@ -26,213 +20,101 @@ function formatToLocal(dbDate) {
   return new Date(jsIsoDate).toLocaleString();
 }
 
+// Extends shared styles with Admin-specific row classes
+function getDataGridSx(theme) {
+  return {
+    ...getBaseDataGridSx(theme),
+    '& .deleted-row': {
+      backgroundColor: '#ffebee',
+      '& .MuiDataGrid-cell': {
+        textDecoration: 'line-through',
+        color: '#c62828',
+      },
+      '&:hover': { backgroundColor: '#ffcdd2' },
+    },
+    '& .edited-row': {
+      backgroundColor: '#e3f2fd',
+      '&:hover': { backgroundColor: '#bbdefb' },
+    },
+  };
+}
+
 export default function AdminDashboard() {
+  const theme = useTheme();
+  const dataGridSx = useMemo(() => getDataGridSx(theme), [theme]);
+
   const [rows, setRows] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  const [recentlyEdited, setRecentlyEdited] = useState(() => {
-    return JSON.parse(localStorage.getItem('recentlyEditedAssignments') || '[]');
-  });
-  const [reviewedRows, setReviewedRows] = useState(() => {
-    return JSON.parse(localStorage.getItem('reviewedRows') || '{}');
-  });
-
-  useEffect(() => {
-    const handler = () => {
-      setRecentlyEdited(JSON.parse(localStorage.getItem('recentlyEditedAssignments') || '[]'));
-    };
-    window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
-  }, []);
-
-  useEffect(() => {
-    const handler = () => {
-      setReviewedRows(JSON.parse(localStorage.getItem('reviewedRows') || '{}'));
-    };
-    window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
-  }, []);
-
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedRow, setSelectedRow] = useState(null);
-  const [reviewStatus, setReviewStatus] = useState({
-    ssn_Sent: false,
-    offer_Sent: false,
-    offer_Signed: false,
-  });
-
+  // DataGrid columns — matches MasterDashboard
   const columns = [
-    { field: 'assignmentId', headerName: 'ID', headerAlign: 'center', width: 70, type: 'number' },
-    { field: 'studentName', headerName: 'Student Name', headerAlign: 'center', flex: 1, minWidth: 150, maxWidth: 300 },
-    { field: 'student_ID', headerName: 'ASU ID', headerAlign: 'center', width: 140 },
-    { field: 'asuRite', headerName: 'ASUrite', headerAlign: 'center', width: 100 },
-    { field: 'position', headerName: 'Position', headerAlign: 'center', width: 150 },
-    { field: 'weeklyHours', headerName: 'Hours', headerAlign: 'center', width: 80 },
-    { field: 'fultonFellow', headerName: 'Fulton Scholar', headerAlign: 'center', width: 120 },
-    { field: 'email', headerName: 'Email', headerAlign: 'center', flex: 1, minWidth: 150, maxWidth: 220, filterable: true },
-    { field: 'educationLevel', headerName: 'Education', headerAlign: 'center', width: 110 },
-    { field: 'instructorName', headerName: 'Instructor Name', headerAlign: 'center', flex: 1, minWidth: 150, maxWidth: 250 },
-    { field: 'subject', headerName: 'Subject', headerAlign: 'center', width: 100 },
-    { field: 'catalogNum', headerName: 'Catalog #', headerAlign: 'center', width: 100, type: 'number' },
+    { field: 'studentName', headerName: 'Student Name', headerAlign: 'center', flex: 1.4, minWidth: 130 },
+    { field: 'student_ID', headerName: 'ASU ID', headerAlign: 'center', flex: 0.9, minWidth: 100 },
+    { field: 'asuRite', headerName: 'ASUrite', headerAlign: 'center', flex: 0.7, minWidth: 80 },
+    { field: 'position', headerName: 'Position', headerAlign: 'center', flex: 1, minWidth: 110 },
+    { field: 'weeklyHours', headerName: 'Hours', headerAlign: 'center', flex: 0.5, minWidth: 60 },
+    { field: 'fultonFellow', headerName: 'Fulton Scholar', headerAlign: 'center', flex: 0.8, minWidth: 90 },
+    { field: 'email', headerName: 'Email', headerAlign: 'center', flex: 1.4, minWidth: 150, filterable: true },
+    { field: 'educationLevel', headerName: 'Education', headerAlign: 'center', flex: 0.7, minWidth: 75 },
+    { field: 'instructorName', headerName: 'Instructor Name', headerAlign: 'center', flex: 1.2, minWidth: 130 },
+    { field: 'instructorEmail', headerName: 'Instructor Email', headerAlign: 'center', flex: 1.4, minWidth: 180 },
     {
       field: 'course',
       headerName: 'Course',
       headerAlign: 'center',
-      width: 130,
-      valueGetter: (value, row) => {
-        return `${row.subject} - ${row.catalogNum}`;
-      }
+      flex: 0.8,
+      minWidth: 90,
+      valueGetter: (value, row) => `${row.subject} - ${row.catalogNum}`,
     },
     { field: 'classSession', headerName: 'Session', headerAlign: 'center', width: 100 },
-    { field: 'location', headerName: 'Location', headerAlign: 'center', width: 120 },
-    { field: 'campus', headerName: 'Campus', headerAlign: 'center', width: 110 },
-    { field: 'classNum', headerName: 'Class #', headerAlign: 'center', width: 110 },
-    { field: 'cum_gpa', headerName: 'Cum GPA', headerAlign: 'center', width: 90 },
-    { field: 'cur_gpa', headerName: 'Cur GPA', headerAlign: 'center', width: 90 },
-    { field: 'costCenterKey', headerName: 'Cost Center', headerAlign: 'center', width: 160 },
-    { field: 'compensation', headerName: 'Compensation', headerAlign: 'center', ...usdPrice },
+    { field: 'location', headerName: 'Location', headerAlign: 'center', flex: 0.7, minWidth: 80 },
+    { field: 'campus', headerName: 'Campus', headerAlign: 'center', flex: 0.7, minWidth: 80 },
+    { field: 'classNum', headerName: 'Class #', headerAlign: 'center', flex: 0.7, minWidth: 80 },
+    { field: 'costCenterKey', headerName: 'Cost Center', headerAlign: 'center', flex: 1, minWidth: 120 },
+    { field: 'compensation', headerName: 'Compensation', headerAlign: 'center', flex: 0.8, minWidth: 100, type: 'number', valueFormatter: (value) => currencyFormatter.format(value), cellClassName: 'font-tabular-nums' },
+    { field: 'position_Number', headerName: 'Position Num', headerAlign: 'center', flex: 0.9, minWidth: 130, editable: true },
     {
-      field: 'review',
-      headerName: 'Review',
-      headerAlign: 'center',
-      width: 100,
-      sortable: false,
-      filterable: false,
-      renderCell: (params) => {
-        const { ssn_Sent, offer_Sent, offer_Signed } = params.row;
-
-        const isGreen = ssn_Sent && offer_Sent && offer_Signed;
-        const isOrange = ssn_Sent && offer_Sent && !offer_Signed;
-
-        let buttonStyle = {};
-        if (isGreen) {
-          buttonStyle = {
-            backgroundColor: '#2e7d32',
-            '&:hover': { backgroundColor: '#45a049' }
-          };
-        } else if (isOrange) {
-          buttonStyle = {
-            backgroundColor: '#f57c00',
-            '&:hover': { backgroundColor: '#e65100' }
-          };
-        }
-
-        const hasColor = isGreen || isOrange;
-
-        return (
-          <Button
-            variant={hasColor ? "contained" : "outlined"}
-            size="small"
-            onClick={() => handleOpenModal(params.row)}
-            sx={buttonStyle}
-          >
-            Review
-          </Button>
-        );
-      },
-    },
-    { field: 'position_Number', headerName: 'Position Number', headerAlign: 'center', width: 140 },
-    { field: 'instructorEdit', headerName: 'Instructor Edit', headerAlign: 'center', width: 120 },
-    {
-      field: 'reviewed',
-      headerName: 'Reviewed',
-      width: 90,
-      type: 'boolean',
-      renderCell: (params) => (
-        <Checkbox
-          checked={!!reviewedRows[params.row.id]}
-          disabled
-          color="success"
-        />
-      ),
-      sortable: false,
-      filterable: false,
+      field: 'instructorEdit',
+      headerName: 'Instructor Edit',
+      flex: 0.7,
+      minWidth: 150,
       align: 'center',
       headerAlign: 'center',
-      description: 'Shows if assignment has been reviewed (read-only in Admin view)'
+      valueGetter: (value) => {
+        if (value === 'Y') return 'Edited';
+        if (value === 'D') return 'Deleted';
+        return '';
+      },
     },
-    { field: 'importedBy', headerName: 'Imported By', headerAlign: 'center', width: 120 },
-    { field: 'createdAt', headerName: 'Date Created', headerAlign: 'center', width: 170, display: 'none' }
+    { field: 'importedBy', headerName: 'Imported By', headerAlign: 'center', flex: 0.8, minWidth: 90 },
+    { field: 'createdAt', headerName: 'Date Created', headerAlign: 'center', flex: 1.25, minWidth: 130, display: 'none' },
+    { field: 'notes', headerName: 'Notes', headerAlign: 'center', flex: 2, minWidth: 200, editable: true },
+    { field: 'status', headerName: 'Status', headerAlign: 'center', flex: 1, minWidth: 120, editable: true },
+    { field: 'jobRequisition', headerName: 'Job Req', headerAlign: 'center', flex: 0.9, minWidth: 110, editable: true },
   ];
 
-  function handleOpenModal(row) {
-    setSelectedRow(row);
-    setReviewStatus({
-      ssn_Sent: row.ssn_Sent ?? false,
-      offer_Sent: row.offer_Sent ?? false,
-      offer_Signed: row.offer_Signed ?? false,
-    });
-    setModalOpen(true);
-  }
-
-  function handleCloseModal() {
-    setModalOpen(false);
-    setSelectedRow(null);
-  }
-
-  function handleCheckboxChange(e) {
-    const { name, checked } = e.target;
-    setReviewStatus((prev) => ({
-      ...prev,
-      [name]: checked
-    }));
-  }
-
-  async function handleSaveReview() {
-    try {
-      const payload = {
-        Position_Number: selectedRow.position_Number,
-        SSN_Sent: reviewStatus.ssn_Sent,
-        Offer_Sent: reviewStatus.offer_Sent,
-        Offer_Signed: reviewStatus.offer_Signed,
-      };
-
-      const response = await fetch(`${baseUrl}/api/StudentClassAssignment/${selectedRow.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) throw new Error('Failed to update assignment');
-
-      setRows(prevRows =>
-        prevRows.map(row =>
-          row.id === selectedRow.id
-            ? {
-                ...row,
-                ssn_Sent: reviewStatus.ssn_Sent,
-                offer_Sent: reviewStatus.offer_Sent,
-                offer_Signed: reviewStatus.offer_Signed,
-                position_Number: payload.Position_Number
-              }
-            : row
-        )
-      );
-
-      handleCloseModal();
-    } catch (err) {
-      console.error('Error updating assignment:', err);
-    }
-  }
-
+  // Handle cell/row updates for editable columns
   const handleRowUpdate = async (newRow) => {
     try {
       const response = await fetch(`${baseUrl}/api/StudentClassAssignment/${newRow.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           Position_Number: newRow.position_Number,
           SSN_Sent: newRow.ssn_Sent ?? false,
-          Offer_Sent: newRow.offer_Sent ?? false,
+          Offer_Sent: newRow.offer_Sent ?? null,
           Offer_Signed: newRow.offer_Signed ?? false,
+          Offer_Sent_Workday: newRow.offer_Sent_Workday ?? false,
+          Offer_Signed_Workday: newRow.offer_Signed_Workday ?? false,
+          Notes: newRow.notes ?? null,
+          Status: newRow.status ?? null,
+          Job_Requisition: newRow.jobRequisition ?? null,
         })
       });
 
-      if (!response.ok) throw new Error('Failed to update position number');
+      if (!response.ok) throw new Error('Failed to update');
 
       return newRow;
     } catch (error) {
@@ -241,9 +123,10 @@ export default function AdminDashboard() {
     }
   };
 
+  // Load data from API - using admin endpoint
   useEffect(() => {
     setLoading(true);
-    fetch(`${baseUrl}/api/StudentClassAssignment/admin`, { credentials: 'include' })
+    fetch(`${baseUrl}/api/StudentClassAssignment/admin`)
       .then(res => {
         if (!res.ok) throw new Error('Failed to load assignments');
         return res.json();
@@ -251,7 +134,6 @@ export default function AdminDashboard() {
       .then(data => {
         const mapped = data.map(r => ({
           id: r.Id,
-          assignmentId: r.Id,
           studentName: `${r.First_Name ?? ''} ${r.Last_Name ?? ''}`.trim(),
           student_ID: r.Student_ID,
           asuRite: r.ASUrite,
@@ -261,6 +143,7 @@ export default function AdminDashboard() {
           email: r.Email,
           educationLevel: r.EducationLevel,
           instructorName: `${r.InstructorFirstName} ${r.InstructorLastName}`.trim(),
+          instructorEmail: r.InstructorEmail || '',
           subject: r.Subject,
           catalogNum: r.CatalogNum,
           classSession: r.ClassSession,
@@ -275,10 +158,14 @@ export default function AdminDashboard() {
           ssn_Sent: r.SSN_Sent,
           offer_Sent: r.Offer_Sent,
           offer_Signed: r.Offer_Signed,
+          offer_Sent_Workday: r.Offer_Sent_Workday,
+          offer_Signed_Workday: r.Offer_Signed_Workday,
           importedBy: r.ImportedBy || '',
           instructorEdit: r.Instructor_Edit || '',
           createdAt: formatToLocal(r.CreatedAt),
-          reviewed: reviewedRows[r.Id] || false,
+          notes: r.Notes || '',
+          status: r.Status || '',
+          jobRequisition: r.Job_Requisition || '',
         }));
 
         setRows(mapped);
@@ -289,24 +176,11 @@ export default function AdminDashboard() {
         setRows([]);
       })
       .finally(() => setLoading(false));
-  }, [reviewedRows, recentlyEdited]);
-
-  const getCellClassName = (params) => {
-    if (reviewedRows[params.row.id]) return '';
-    const edited = recentlyEdited.find(r => r.id === params.row.id);
-    if (edited && edited.changed_fields && edited.changed_fields.includes(params.field)) {
-      return 'highlight-cell';
-    }
-    return '';
-  };
+  }, []);
 
   const getRowClassName = (params) => {
-    if (params.row.instructorEdit === 'D') {
-      return 'deleted-row';
-    }
-    if (params.row.instructorEdit === 'Y') {
-      return 'edited-row';
-    }
+    if (params.row.instructorEdit === 'D') return 'deleted-row';
+    if (params.row.instructorEdit === 'Y') return 'edited-row';
     return params.indexRelativeToCurrentPage % 2 === 0 ? 'even-row' : 'odd-row';
   };
 
@@ -320,118 +194,45 @@ export default function AdminDashboard() {
 
   return (
     <>
-      <div style={{ height: 'calc(100vh - 120px)', width: '100%' }}>
-        <Typography variant="h5" gutterBottom>
+      <Paper elevation={3} sx={{ p: 3, m: 2, minHeight: 'calc(100vh - 140px)' }}>
+        <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 1 }}>
           Admin Dashboard
         </Typography>
         <Typography variant="body2" sx={{ opacity: 0.8, mb: 2 }}>
-          Tip: Click the <b>Columns</b> icon in the toolbar to show or hide additional fields. This view shows ALL assignments including edited ones.
+          Tip: Click the <b>Columns</b> button in the toolbar to show/hide fields or drag to reorder. This view shows ALL assignments including edited and deleted.
         </Typography>
-        <DataGridPro
-          sx={{
-            '& .MuiDataGrid-toolbar': { justifyContent: 'flex-start' },
-            '& .MuiDataGrid-cell': { textAlign: 'center' },
-            '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 'bold', fontSize: '1.1em' },
-            '& .MuiDataGrid-columnHeaders': {
-              position: 'sticky',
-              top: 0,
-              zIndex: 10,
-            },
-            '& .highlight-cell': {
-              backgroundColor: '#fff9c4',
-              fontWeight: 600,
-            },
-            '& .deleted-row': {
-              backgroundColor: '#ffebee',
-              '& .MuiDataGrid-cell': {
-                textDecoration: 'line-through',
-                color: '#c62828',
+        <Box sx={{ height: 'calc(100vh - 200px)', flexGrow: 1 }}>
+          <DataGridPro
+            sx={dataGridSx}
+            pagination
+            rows={rows}
+            columns={columns}
+            getRowClassName={getRowClassName}
+            loading={loading}
+            initialState={{
+              pagination: { paginationModel: { pageSize: 50, page: 0 } },
+              density: 'compact',
+              columns: {
+                columnVisibilityModel: {
+                  fultonFellow: false,
+                  campus: false,
+                  compensation: false,
+                  importedBy: false,
+                },
               },
-              '&:hover': {
-                backgroundColor: '#ffcdd2',
-              },
-            },
-            '& .edited-row': {
-              backgroundColor: '#e3f2fd',
-              '&:hover': {
-                backgroundColor: '#bbdefb',
-              },
-            },
-            '& .even-row': {
-              backgroundColor: '#f5f5f5',
-              '&:hover': {
-                backgroundColor: '#e8e8e8',
-              },
-            },
-            '& .odd-row': {
-              backgroundColor: '#ffffff',
-              '&:hover': {
-                backgroundColor: '#f0f0f0',
-              },
-            },
-          }}
-          pagination
-          rows={rows}
-          columns={columns}
-          getCellClassName={getCellClassName}
-          getRowClassName={getRowClassName}
-          loading={loading}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 50, page: 0 } },
-            density: 'compact',
-            columns: {
-              columnVisibilityModel: {
-                subject: false,
-                catalogNum: false,
-                createdAt: false,
-                cum_gpa: false,
-                cur_gpa: false,
-                asuRite: false,
-              },
-            },
-          }}
-          pageSizeOptions={[25, 50, 100, { value: rows.length, label: 'All' }]}
-          disableSelectionOnClick
-          allowColumnReordering
-          showToolbar
-          headerFilters
-          processRowUpdate={handleRowUpdate}
-        />
-      </div>
+            }}
+            pageSizeOptions={[25, 50, 100, { value: rows.length, label: 'All' }]}
+            disableSelectionOnClick
+            allowColumnReordering
+            slots={{ toolbar: CustomToolbar }}
+            showToolbar
+            headerFilters
+            processRowUpdate={handleRowUpdate}
+          />
+        </Box>
+      </Paper>
 
-      <Dialog open={modalOpen} onClose={handleCloseModal} maxWidth="sm" fullWidth>
-        <DialogTitle>Review Assignment: {selectedRow?.studentName}</DialogTitle>
-        <DialogContent>
-          <FormGroup>
-            <FormControlLabel
-              control={<Checkbox
-                name="ssn_Sent"
-                checked={reviewStatus.ssn_Sent}
-                onChange={handleCheckboxChange} />}
-              label="SSN Sent"
-            />
-            <FormControlLabel
-              control={<Checkbox
-                name="offer_Sent"
-                checked={reviewStatus.offer_Sent}
-                onChange={handleCheckboxChange} />}
-              label="Offer Sent"
-            />
-            <FormControlLabel
-              control={<Checkbox
-                name="offer_Signed"
-                checked={reviewStatus.offer_Signed}
-                onChange={handleCheckboxChange} />}
-              label="Offer Signed"
-            />
-          </FormGroup>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseModal}>Cancel</Button>
-          <Button onClick={handleSaveReview} variant="contained">Save</Button>
-        </DialogActions>
-      </Dialog>
-
+      {/* Snackbar for notifications */}
       <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
         <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}>
           {snackbar.message}

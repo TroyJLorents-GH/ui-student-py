@@ -1,21 +1,41 @@
-import React from "react";
+// src/RouteGuard.js
+import React, { useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 
-export function ProtectedRoute({ children, perm }) {
-  const { asurite, isAdmin, perms, loading } = useAuth();
+export function ProtectedRoute({ children }) {
+  const { asurite, loading, USE_CAS } = useAuth();
 
-  if (loading) return <div>Loading...</div>;
-  if (!asurite) return <Navigate to="/login" replace />;
-  if (perm && !perms[perm] && !isAdmin) return <Navigate to="/not-authorized" replace />;
+  useEffect(() => {
+    if (!loading && !asurite && USE_CAS) {
+      // Force full page redirect to backend for CAS
+      window.location.href = "/auth/login";
+    }
+  }, [loading, asurite, USE_CAS]);
+
+  if (loading) return <div>Loading…</div>;
+  if (!asurite) {
+    if (USE_CAS) return <div>Redirecting to login...</div>;
+    return <Navigate to="/login" replace />;
+  }
   return children;
 }
 
 export function AdminRoute({ children }) {
-  const { asurite, isAdmin, loading } = useAuth();
+  const { asurite, isAdmin, loading, USE_CAS } = useAuth();
 
-  if (loading) return <div>Loading...</div>;
-  if (!asurite) return <Navigate to="/login" replace />;
+  useEffect(() => {
+    if (!loading && !asurite && USE_CAS) {
+      // Force full page redirect to backend for CAS
+      window.location.href = "/auth/login";
+    }
+  }, [loading, asurite, USE_CAS]);
+
+  if (loading) return <div>Loading…</div>;
+  if (!asurite) {
+    if (USE_CAS) return <div>Redirecting to login...</div>;
+    return <Navigate to="/login" replace />;
+  }
   if (!isAdmin) return <Navigate to="/not-authorized" replace />;
   return children;
 }
