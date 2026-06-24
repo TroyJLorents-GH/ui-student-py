@@ -5,7 +5,6 @@ const API = process.env.REACT_APP_API_URL || "";
 
 export default function Login() {
   const { asurite, refresh } = useAuth();
-  const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -61,31 +60,31 @@ export default function Login() {
           {asurite ? <>Currently signed in as <b>{asurite}</b></> : <>You’re not signed in.</>}
         </p>
 
-        <div style={{ marginTop: 16 }}>
-          <input
-            type="text"
-            placeholder="Enter ASURITE (e.g., tlorents1)"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #ddd', fontSize: 16 }}
-          />
+        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <button
-            onClick={() => impersonate(input.trim().toLowerCase())}
-            disabled={!input.trim() || busy}
-            style={{ marginTop: 12, width: '100%', padding: '10px 12px', borderRadius: 8, border: 'none',
+            onClick={() => impersonate('demo_faculty')}
+            disabled={busy}
+            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: 'none',
               background: '#8c1d40', color: '#fff', fontWeight: 600, cursor: 'pointer', opacity: busy ? 0.7 : 1 }}
           >
-            {busy ? 'Signing in…' : 'Dev Login'}
+            Login as Faculty
           </button>
-        </div>
-
-         <div style={{ marginTop: 12 }}>
-          <a
-            href={`${API}/api/dev-impersonate?asurite=tlorents`}
-            onClick={(e) => { e.preventDefault(); impersonate('tlorents'); }}
+          <button
+            onClick={() => impersonate('demo_chair')}
+            disabled={busy}
+            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: 'none',
+              background: '#8c1d40', color: '#fff', fontWeight: 600, cursor: 'pointer', opacity: busy ? 0.7 : 1 }}
           >
-            Quick: login as <b>tlorents</b>
-          </a>
+            Login as Program Chair
+          </button>
+          <button
+            onClick={() => impersonate('demo_admin')}
+            disabled={busy}
+            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: 'none',
+              background: '#8c1d40', color: '#fff', fontWeight: 600, cursor: 'pointer', opacity: busy ? 0.7 : 1 }}
+          >
+            Login as Admin
+          </button>
         </div>
 
         <div style={{ marginTop: 16 }}>
