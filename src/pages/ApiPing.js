@@ -1,35 +1,36 @@
 import React, { useState } from 'react';
-import { Box, Button, Typography, Paper } from '@mui/material';
-
-const baseUrl = process.env.REACT_APP_API_BASE;
+const API = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 export default function ApiPing() {
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState(null);
+  const [out, setOut] = useState('');
 
-  const ping = async () => {
-    setError(null);
-    setResult(null);
+  const doPing = async () => {
     try {
-      const res = await fetch(`${baseUrl}/api/ping`, { credentials: 'include' });
-      const text = await res.text();
-      setResult(text);
+      const r = await fetch(`${API}/api/ping`, { credentials: 'include' });
+      const txt = await r.text();
+      setOut(`Status: ${r.status}, Body: ${txt}`);
     } catch (e) {
-      setError(e.message);
+      setOut(`Error: ${String(e)}`);
+    }
+  };
+
+  const getUser = async () => {
+    try {
+      const r = await fetch(`${API}/api/user`, { credentials: 'include' });
+      const js = await r.json();
+      setOut(`Status: ${r.status}, JSON: ${JSON.stringify(js)}`);
+    } catch (e) {
+      setOut(`Error: ${String(e)}`);
     }
   };
 
   return (
-    <Box sx={{ maxWidth: 500, mx: 'auto', mt: 8 }}>
-      <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-        <Typography variant="h5" gutterBottom>API Connectivity Test</Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Base URL: {baseUrl || '(not set)'}
-        </Typography>
-        <Button variant="contained" onClick={ping}>Ping Backend</Button>
-        {result && <Typography sx={{ mt: 2, color: 'green' }}>Response: {result}</Typography>}
-        {error && <Typography sx={{ mt: 2, color: 'red' }}>Error: {error}</Typography>}
-      </Paper>
-    </Box>
+    <div style={{ padding: 24 }}>
+      <h3>API Connectivity Test</h3>
+      <button onClick={doPing}>Ping</button>{' '}
+      <button onClick={getUser}>/api/user</button>
+      <pre>{out}</pre>
+      <p><a href={`${API}/api/dev-login-no-redirect`}>Set cookie (no redirect)</a></p>
+    </div>
   );
 }

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { DataGridPro } from '@mui/x-data-grid-pro';
 import { Paper, Typography, Box, Chip } from '@mui/material';
 
-const API = process.env.REACT_APP_API_BASE;
+const API = process.env.REACT_APP_API_URL;
 
 export default function AuditLogs() {
   const [rows, setRows] = useState([]);
@@ -17,12 +17,13 @@ export default function AuditLogs() {
       if (!r.ok) throw new Error('Failed to load audit logs');
       const data = await r.json();
 
+      // Map to DataGrid format
       const mapped = data.logs.map((log) => ({
         id: log.id,
         admin_user: log.admin_user,
         action_type: log.action_type,
         timestamp: new Date(log.timestamp).toLocaleString(),
-        timestampRaw: new Date(log.timestamp),
+        timestampRaw: new Date(log.timestamp), // For sorting
         status: log.status,
         summary: log.summary,
         details: log.details ? JSON.stringify(JSON.parse(log.details), null, 2) : '',

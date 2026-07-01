@@ -1,3 +1,9 @@
+// import React from 'react';
+// export default function AdminHome() {
+//   return <div style={{ padding: 24 }}>AdminHome (test)</div>;
+// }
+
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 
@@ -11,6 +17,7 @@ export default function AdminHome() {
       <ul style={{ lineHeight: 1.9 }}>
         <li><Link to="/admin/users">Manage Users</Link></li>
         <li><Link to="/admin/users/new">Add User</Link></li>
+        <li><Link to="/admin/analytics">Analytics</Link></li>
       </ul>
     </div>
   );

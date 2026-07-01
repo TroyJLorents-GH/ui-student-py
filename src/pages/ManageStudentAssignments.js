@@ -1,101 +1,50 @@
-import React, { useState, useRef } from 'react';
-import {
-  Paper, Typography, TextField, Button, Grid, Snackbar, Alert,
-  Box, Chip, Divider, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText
-} from '@mui/material';
-import {
-  DataGridPro,
-  gridDensitySelector,
-  ToolbarButton,
-  useGridApiContext,
-  useGridSelector,
-  GridToolbarContainer,
-  GridToolbarColumnsButton,
-  GridToolbarFilterButton,
-  GridToolbarExport,
-  GridToolbarQuickFilter,
-} from '@mui/x-data-grid-pro';
-import CheckIcon from '@mui/icons-material/Check';
-import SettingsIcon from '@mui/icons-material/Settings';
-import ViewColumnIcon from '@mui/icons-material/ViewColumn';
+import React, { useState } from 'react';
+import { Paper, Typography, TextField, Button, Grid, Snackbar, Alert } from '@mui/material';
+import { DataGridPro } from '@mui/x-data-grid-pro';
 
-const baseUrl = process.env.REACT_APP_API_BASE;
-
-const DENSITY_OPTIONS = [
-  { label: 'Compact density', value: 'compact' },
-  { label: 'Standard density', value: 'standard' },
-  { label: 'Comfortable density', value: 'comfortable' },
-];
-
-function CustomToolbar() {
-  const apiRef = useGridApiContext();
-  const density = useGridSelector(apiRef, gridDensitySelector);
-  const [densityMenuOpen, setDensityMenuOpen] = useState(false);
-  const densityMenuTriggerRef = useRef(null);
-
-  return (
-    <GridToolbarContainer>
-      <GridToolbarColumnsButton />
-      <GridToolbarFilterButton />
-      <GridToolbarExport />
-      <GridToolbarQuickFilter />
-      <Tooltip title="Adjust row density">
-        <ToolbarButton
-          ref={densityMenuTriggerRef}
-          id="density-menu-trigger"
-          aria-controls="density-menu"
-          aria-haspopup="true"
-          aria-expanded={densityMenuOpen ? 'true' : undefined}
-          onClick={() => setDensityMenuOpen(true)}
-        >
-          <SettingsIcon fontSize="small" />
-        </ToolbarButton>
-      </Tooltip>
-      <Menu
-        id="density-menu"
-        anchorEl={densityMenuTriggerRef.current}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        open={densityMenuOpen}
-        onClose={() => setDensityMenuOpen(false)}
-        slotProps={{ list: { 'aria-labelledby': 'density-menu-trigger' } }}
-      >
-        {DENSITY_OPTIONS.map((option) => (
-          <MenuItem
-            key={option.value}
-            onClick={() => { apiRef.current.setDensity(option.value); setDensityMenuOpen(false); }}
-          >
-            <ListItemIcon>{density === option.value && <CheckIcon fontSize="small" />}</ListItemIcon>
-            <ListItemText>{option.label}</ListItemText>
-          </MenuItem>
-        ))}
-      </Menu>
-    </GridToolbarContainer>
-  );
-}
+const baseUrl = process.env.REACT_APP_API_URL;
 
 const columns = [
-  { field: 'studentName', headerName: 'Student Name', headerAlign: 'center', flex: 1.5, minWidth: 150 },
-  { field: 'student_ID', headerName: 'ASU ID', headerAlign: 'center', flex: 0.9, minWidth: 110 },
-  { field: 'asuRite', headerName: 'ASUrite', headerAlign: 'center', flex: 0.8, minWidth: 90 },
-  { field: 'position', headerName: 'Position', headerAlign: 'center', flex: 1, minWidth: 110 },
-  { field: 'weeklyHours', headerName: 'Hours', headerAlign: 'center', flex: 0.5, minWidth: 70, editable: true, type: 'number' },
-  { field: 'fultonFellow', headerName: 'Fulton Fellow', headerAlign: 'center', flex: 0.8, minWidth: 100 },
-  { field: 'email', headerName: 'Email', headerAlign: 'center', flex: 1.4, minWidth: 160 },
-  { field: 'educationLevel', headerName: 'Education', headerAlign: 'center', width: 110 },
-  { field: 'instructorName', headerName: 'Instructor Name', headerAlign: 'center', flex: 1.2, minWidth: 140 },
-  {
-    field: 'course',
-    headerName: 'Course',
-    headerAlign: 'center',
-    flex: 1,
-    minWidth: 120,
-    valueGetter: (value, row) => `${row.subject} - ${row.catalogNum}`,
-  },
+  { field: 'studentName', headerName: 'Student Name', headerAlign: 'center', flex: 1, minWidth: 150, maxWidth: 200 },
+  { field: 'student_ID', headerName: 'ASU ID', headerAlign: 'center', width: 140 },
+  { field: 'asuRite', headerName: 'ASUrite', headerAlign: 'center', width: 100 },
+  { field: 'position', headerName: 'Position', headerAlign: 'center', width: 150 },
+  { field: 'weeklyHours', headerName: 'Hours', headerAlign: 'center', width: 80, editable: true }, // Editable!
+  { field: 'fultonFellow', headerName: 'Fulton Fellow', headerAlign: 'center', width: 120 },
+  { field: 'email', headerName: 'Email', headerAlign: 'center', flex: 1, minWidth: 150, maxWidth: 300, filterable: true },
+  { field: 'educationLevel', headerName: 'Education', headerAlign: 'center', width: 120 },
+  { field: 'instructorName', headerName: 'Instructor Name', headerAlign: 'center', flex: 1, minWidth: 150, maxWidth: 300 },
+  { field: 'subject', headerName: 'Subject', headerAlign: 'center', width: 100 },
+  { field: 'catalogNum', headerName: 'Catalog #', headerAlign: 'center', width: 100, type: 'number' },
   { field: 'classSession', headerName: 'Session', headerAlign: 'center', width: 100 },
-  { field: 'classNum', headerName: 'Class #', headerAlign: 'center', width: 100 },
   { field: 'location', headerName: 'Location', headerAlign: 'center', width: 120 },
   { field: 'campus', headerName: 'Campus', headerAlign: 'center', width: 110 },
+  { field: 'classNum', headerName: 'Class #', headerAlign: 'center', width: 110 },
+  {
+    field: 'otherPositions',
+    headerName: 'Additional Assignments',
+    headerAlign: 'center',
+    flex: 0.9,
+    minWidth: 160,
+    maxWidth: 200,
+    renderCell: (params) => {
+      const value = params.value;
+      if (!value) return '-';
+      return (
+        <div style={{
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          lineHeight: '1.4',
+          fontSize: '0.9em',
+          padding: '4px',
+          maxHeight: '100%',
+          overflow: 'visible'
+        }}>
+          {value}
+        </div>
+      );
+    }
+  }
 ];
 
 const ManageStudentAssignments = () => {
@@ -112,25 +61,55 @@ const ManageStudentAssignments = () => {
       const res = await fetch(`${baseUrl}/api/manage-assignments/by-instructor/${instructorId}`);
       if (!res.ok) throw new Error('Failed to load assignments');
       const data = await res.json();
-      const mapped = data.map(r => ({
-        id: r.Id,
-        studentName: `${r.First_Name ?? ''} ${r.Last_Name ?? ''}`,
-        student_ID: r.Student_ID,
-        asuRite: r.ASUrite,
-        position: r.Position,
-        weeklyHours: r.WeeklyHours,
-        fultonFellow: r.FultonFellow,
-        email: r.Email,
-        educationLevel: r.EducationLevel,
-        instructorName: `${r.InstructorFirstName} ${r.InstructorLastName}`,
-        subject: r.Subject,
-        catalogNum: r.CatalogNum,
-        classSession: r.ClassSession,
-        location: r.Location,
-        campus: r.Campus,
-        classNum: r.ClassNum,
-        acadCareer: r.AcadCareer
-      }));
+
+      // Group all assignments by student to calculate other positions
+      const studentAssignments = {};
+      data.forEach(r => {
+        const studentId = r.Student_ID;
+        if (!studentAssignments[studentId]) {
+          studentAssignments[studentId] = [];
+        }
+        studentAssignments[studentId].push({
+          catalogNum: r.CatalogNum,
+          subject: r.Subject,
+          position: r.Position,
+        });
+      });
+
+      // Map data and calculate otherPositions for each row
+      const mapped = data.map(r => {
+        const studentId = r.Student_ID;
+        const allAssignments = studentAssignments[studentId] || [];
+
+        // Filter out the current assignment to get "other" positions
+        const otherAssignments = allAssignments.filter(
+          a => !(a.catalogNum === r.CatalogNum && a.subject === r.Subject)
+        );
+
+        return {
+          id: r.Id,
+          studentName: `${r.First_Name ?? ''} ${r.Last_Name ?? ''}`,
+          student_ID: r.Student_ID,
+          asuRite: r.ASUrite,
+          position: r.Position,
+          weeklyHours: r.WeeklyHours,
+          fultonFellow: r.FultonFellow,
+          email: r.Email,
+          educationLevel: r.EducationLevel,
+          instructorName: `${r.InstructorFirstName} ${r.InstructorLastName}`,
+          subject: r.Subject,
+          catalogNum: r.CatalogNum,
+          classSession: r.ClassSession,
+          location: r.Location,
+          campus: r.Campus,
+          classNum: r.ClassNum,
+          acadCareer: r.AcadCareer,
+          otherPositions: otherAssignments.length > 0
+            ? otherAssignments.map(a => `${a.subject} - ${a.catalogNum} (${a.position})`).join('\n')
+            : '',
+        };
+      });
+
       setRows(mapped);
     } catch (err) {
       setSnackbar({ open: true, message: err.message, severity: 'error' });
@@ -138,20 +117,21 @@ const ManageStudentAssignments = () => {
     }
   };
 
+  // In-line update
   const processRowUpdate = async (newRow) => {
     try {
       const res = await fetch(`${baseUrl}/api/manage-assignments/${newRow.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          WeeklyHours: newRow.weeklyHours,
-          Position: newRow.position,
-          Subject: newRow.subject,
-          CatalogNum: newRow.catalogNum,
-          ClassSession: newRow.classSession,
-          ClassNum: newRow.classNum,
-          FultonFellow: newRow.fultonFellow
-        })
+        body: JSON.stringify({ 
+            WeeklyHours: newRow.weeklyHours,
+            Position: newRow.position,
+            Subject: newRow.subject,
+            CatalogNum: newRow.catalogNum,
+            ClassSession: newRow.classSession,
+            ClassNum: newRow.classNum,
+            FultonFellow: newRow.fultonFellow
+         }) // Only allow updating allowed fields
       });
       if (!res.ok) throw new Error('Failed to update assignment');
       setSnackbar({ open: true, message: 'Updated successfully!', severity: 'success' });
@@ -162,30 +142,12 @@ const ManageStudentAssignments = () => {
     }
   };
 
-  const getRowClassName = (params) =>
-    params.indexRelativeToCurrentPage % 2 === 0 ? 'even-row' : 'odd-row';
-
   return (
-    <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-            Manage Student Assignments
-          </Typography>
-          {rows.length > 0 && (
-            <Chip
-              label={`${rows.length} student${rows.length !== 1 ? 's' : ''}`}
-              size="small"
-              color="primary"
-              variant="outlined"
-            />
-          )}
-        </Box>
-      </Box>
-
-      {/* Search */}
-      <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
+    <Paper elevation={3} style={{ padding: 24, margin: 24 }}>
+      <Typography variant="h5" gutterBottom>
+        Manage Student Assignments
+      </Typography>
+      <Grid container spacing={2} alignItems="center" style={{ marginBottom: 20 }}>
         <Grid item>
           <TextField
             label="Instructor ID"
@@ -193,70 +155,40 @@ const ManageStudentAssignments = () => {
             onChange={e => setInstructorId(e.target.value)}
             variant="outlined"
             size="small"
-            helperText="Enter instructor ID to load their students"
-            onKeyDown={e => e.key === 'Enter' && handleFetch()}
           />
         </Grid>
         <Grid item>
-          <Button variant="contained" color="primary" onClick={handleFetch}>
+          <Button variant="contained" onClick={handleFetch} sx={{
+              backgroundColor: '#8c1d40',
+              '&:hover': { backgroundColor: '#701831' },
+            }}>
             Fetch Students
           </Button>
         </Grid>
       </Grid>
-
-      {rows.length > 0 && (
-        <>
-          <Typography variant="body2" sx={{ opacity: 0.7, mb: 2 }}>
-            Tip: <b>Hours</b> column is editable — double-click a cell to change it. Use the <b>Columns</b>{' '}
-            <ViewColumnIcon sx={{ fontSize: '1.25rem', verticalAlign: 'text-bottom', display: 'inline' }} />{' '}
-            button to show/hide fields.
-          </Typography>
-          <Divider sx={{ mb: 2 }} />
-        </>
-      )}
-
-      <div style={{ height: rows.length > 0 ? 'calc(100vh - 320px)' : 200, width: '100%' }}>
+      <div style={{ height: 600, width: '100%' }}>
         <DataGridPro
           sx={{
-            border: '1px solid #e0e0e0',
-            borderRadius: 1,
             '& .MuiDataGrid-cell': { textAlign: 'center' },
-            '& .MuiDataGrid-toolbar': { justifyContent: 'flex-start' },
-            '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 'bold', fontSize: '1.05em' },
-            '& .MuiDataGrid-columnHeaders': { backgroundColor: '#f9f9f9' },
-            '& .even-row': {
-              backgroundColor: '#fafafa',
-              '&:hover': { backgroundColor: '#f0f0f0' },
+            '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 'bold', fontSize: '1.1em' },
+            '& .highlight-cell': {
+              backgroundColor: '#fff9c4',
+              fontWeight: 600,
             },
-            '& .odd-row': {
-              backgroundColor: '#ffffff',
-              '&:hover': { backgroundColor: '#f5f5f5' },
-            },
-            '& .MuiDataGrid-footerContainer': { borderTop: '2px solid #e0e0e0' },
           }}
           rows={rows}
           columns={columns}
-          getRowClassName={getRowClassName}
           processRowUpdate={processRowUpdate}
-          pagination
-          initialState={{
-            pagination: { paginationModel: { pageSize: 50, page: 0 } },
-            density: 'standard',
-            columns: {
-              columnVisibilityModel: {
-                location: false,
-                campus: false,
-              },
-            },
-          }}
           pageSizeOptions={[25, 50, 100]}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 25, page: 0 } }
+          }}
           disableSelectionOnClick
-          allowColumnReordering
-          slots={{ toolbar: CustomToolbar }}
           showToolbar
+          allowColumnReordering={true}
+          experimentalFeatures={{ newEditingApi: true }}
         />
       </div>
-
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3500}

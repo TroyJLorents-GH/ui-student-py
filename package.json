@@ -2,34 +2,42 @@
   "name": "student-ui",
   "version": "0.1.0",
   "private": true,
+  "proxy": "http://localhost:8001",
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mescius/wijmo.purejs.all": "^5.20251.34",
     "@mui/icons-material": "^7.2.0",
-    "@mui/material": "^7.0.2",
-    "@mui/x-charts-pro": "^8.8.0",
-    "@mui/x-data-grid": "^8.1.0",
-    "@mui/x-data-grid-pro": "^8.8.0",
-    "@mui/x-date-pickers-pro": "^8.8.0",
-    "@mui/x-tree-view-pro": "^8.8.0",
+    "@mui/material": "7.3",
+    "@mui/system": "7.3",
+    "@mui/x-charts-premium": "^8.29.0",
+    "@mui/x-charts-pro": "^8.29.0",
+    "@mui/x-data-grid": "^8.29.0",
+    "@mui/x-data-grid-premium": "^8.29.0",
+    "@mui/x-data-grid-pro": "^8.29.0",
+    "@mui/x-date-pickers-pro": "^8.29.0",
+    "@mui/x-scheduler": "^9.0.0-alpha.6",
+    "@mui/x-tree-view-pro": "^8.29.0",
     "@react-pdf/renderer": "^4.3.0",
     "ag-grid-community": "^33.2.4",
     "ag-grid-react": "^33.2.4",
     "cra-template": "1.2.0",
+    "d3-scale-chromatic": "^3.1.0",
     "lucide-react": "^0.525.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-input-mask": "^2.0.4",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.3.0",
     "react-scripts": "5.0.1",
+    "remark-gfm": "^4.0.1",
     "web-vitals": "^4.2.4",
     "xlsx": "^0.18.5"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
+    "start": "craco start",
+    "build": "craco build",
+    "test": "craco test",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -51,6 +59,7 @@
     ]
   },
   "devDependencies": {
-    "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "@craco/craco": "^7.1.0"
   }
 }

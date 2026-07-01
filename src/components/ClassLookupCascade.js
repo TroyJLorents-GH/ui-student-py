@@ -6,10 +6,10 @@ import {
 import { Stack } from '@mui/material';
 
 
-const baseUrl = process.env.REACT_APP_API_BASE;
+const baseUrl = process.env.REACT_APP_API_URL;
 
 if (!baseUrl) {
-  console.error("REACT_APP_API_BASE is not defined. Make sure it's set in your .env file.");
+  console.error("REACT_APP_API_URL is not defined. Make sure it's set in your .env file.");
 }
 
 const ClassLookupCascade = ({ setClassDetails }) => {
@@ -54,7 +54,9 @@ const ClassLookupCascade = ({ setClassDetails }) => {
           const response = await fetch(`${baseUrl}/api/class/catalog?term=${selectedTerm}&subject=${encodeURIComponent(selectedSubject)}`);
           if (!response.ok) throw new Error('Failed to fetch catalogs');
           const data = await response.json();
-          setCatalogs(data);
+          // Sort numerically instead of alphabetically
+          const sorted = data.sort((a, b) => parseInt(a) - parseInt(b));
+          setCatalogs(sorted);
         } catch (err) {
           setError(err.message);
         }
@@ -75,7 +77,16 @@ const ClassLookupCascade = ({ setClassDetails }) => {
           const response = await fetch(`${baseUrl}/api/class/classnumbers?term=${selectedTerm}&subject=${encodeURIComponent(selectedSubject)}&catalogNum=${selectedCatalog}`);
           if (!response.ok) throw new Error('Failed to fetch class numbers');
           const data = await response.json();
-          setClassNumbers(data);
+          // Sort numerically (numbers first) then alphabetically
+          const sorted = data.sort((a, b) => {
+            const aNum = parseInt(a);
+            const bNum = parseInt(b);
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+              return aNum - bNum;
+            }
+            return String(a).localeCompare(String(b));
+          });
+          setClassNumbers(sorted);
         } catch (err) {
           setError(err.message);
         }
@@ -131,7 +142,7 @@ const ClassLookupCascade = ({ setClassDetails }) => {
               onChange={(e) => setSelectedTerm(e.target.value)}
             >
               <MenuItem value=""><em>Select Term</em></MenuItem>
-              <MenuItem value="2254">Fall 2025</MenuItem>
+              <MenuItem value="2261">Summer 2026</MenuItem>
             </Select>
           </FormControl>
         </Grid>

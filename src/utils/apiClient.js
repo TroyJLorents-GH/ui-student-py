@@ -1,4 +1,10 @@
-const API_BASE = process.env.REACT_APP_API_BASE || "";
+// src/utils/apiClient.js
+const API_BASE =
+  process.env.REACT_APP_API_URL ||
+  (import.meta && import.meta.env && import.meta.env.VITE_API_BASE) ||
+  "";
+
+const USE_CAS = String(process.env.REACT_APP_USE_CAS || "false").toLowerCase() === "true";
 
 export async function apiFetch(path, options = {}) {
   const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
@@ -13,7 +19,8 @@ export async function apiFetch(path, options = {}) {
   });
 
   if (res.status === 401) {
-    window.location.href = "/login";
+    // CAS path for prod, dev login page for local
+    window.location.href = USE_CAS ? "/auth/login" : "/login";
     return;
   }
 

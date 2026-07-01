@@ -10,26 +10,40 @@ import { AuthContext } from '../AuthContext';
 import { computeCostCenterKey } from '../utils/costCenterRules';
 import { CustomToolbar, getDataGridSx } from '../utils/dataGridStyles';
 
-const baseUrl = process.env.REACT_APP_API_BASE;
-const CURRENT_TERM = '2261';
+const baseUrl = process.env.REACT_APP_API_URL;
+const CURRENT_TERM = '2264'; // Default term
 
 const HOURS = [5, 10, 15, 20];
+const HOURS_SUMMER = [5, 10, 15, 20, 25, 30, 35, 40];
 
-const getSessionColor = (remaining) => {
-  if (remaining === 0) return { main: '#d32f2f', light: '#ffebee', text: '#c62828' };
-  if (remaining <= 10) return { main: '#f57c00', light: '#fff3e0', text: '#e65100' };
-  return { main: '#2e7d32', light: '#e8f5e9', text: '#1b5e20' };
+// Helper function to get color based on remaining hours (cap-aware)
+const getSessionColor = (remaining, cap = 20) => {
+  if (remaining === 0) return { main: '#d32f2f', light: '#ffebee', text: '#c62828' }; // Red
+  if (remaining <= cap / 2) return { main: '#f57c00', light: '#fff3e0', text: '#e65100' }; // Orange
+  return { main: '#2e7d32', light: '#e8f5e9', text: '#1b5e20' }; // Green
 };
 
-const getProgressValue = (remaining) => ((20 - remaining) / 20) * 100;
+// Calculate progress percentage (hours used out of cap)
+const getProgressValue = (remaining, cap = 20) => ((cap - remaining) / cap) * 100;
 
-const calculateComp = (pos, hours, edu, fellow, session) => {
+// Calculate compensation for Graders only
+const calculateComp = (pos, hours, edu, fellow, session, term) => {
   const h = parseInt(hours, 10);
   const sess = String(session || "").toUpperCase();
   const degree = String(edu || "").toUpperCase();
-  const ff = "No";
+  const ff = "No"; // Always No for graders
 
-  if (pos === "Grader" && (degree === "BS" || degree === "MS" || degree === "PHD") && ff === "No") {
+  // --- Summer terms (ending in 4) ---
+  if (term && String(term).endsWith("4")) {
+    const sessionMultiplier = { A: 2.5, B: 4, C: 5, DYN: 5 }[sess] || 0;
+    if (pos === "Grader") return Math.round(15.62 * (h * 2) * sessionMultiplier * 100) / 100;
+    return 0;
+  }
+
+  // --- Spring/Fall ---
+
+  // --- Grader (MS or PHD, Fellow: No) ---
+  if (pos === "Grader" && (degree === "BS" ||degree === "MS" || degree === "PHD") && ff === "No") {
     if (h === 5)  { if (sess === "C") return 1562; if (sess === "A" || sess === "B") return 781; }
     if (h === 10) { if (sess === "C") return 3124; if (sess === "A" || sess === "B") return 1562; }
     if (h === 15) { if (sess === "C") return 4686; if (sess === "A" || sess === "B") return 2343; }
@@ -48,11 +62,6 @@ export default function FacultyGraderUploads() {
       color: '#666',
       fontStyle: 'italic',
     },
-    '& .highlight-cell': {
-      backgroundColor: '#ffeb3b !important',
-      fontWeight: 'bold',
-      color: '#000',
-    },
   }), [theme]);
 
   const { asurite, perms } = useContext(AuthContext);
@@ -65,25 +74,13 @@ export default function FacultyGraderUploads() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [rowToDelete, setRowToDelete] = useState(null);
   const apiRef = useRef(null);
+  // Track session-based hours for students being edited/added (studentId -> { hoursA, hoursB, hoursC, remainingA, remainingB, remainingC })
   const [studentHoursMap, setStudentHoursMap] = useState({});
+  // Store original row data when editing starts (to compare hours changes)
   const [originalEditRow, setOriginalEditRow] = useState(null);
+  // Hours validation dialog state
   const [hoursDialog, setHoursDialog] = useState({ open: false, studentName: '', requestedHours: 0, targetSession: '', sessionData: null });
-  const [recentlyEdited, setRecentlyEdited] = useState(() => {
-    return JSON.parse(localStorage.getItem('recentlyEditedAssignments') || '[]');
-  });
-
-  useEffect(() => {
-    const handler = () => {
-      setRecentlyEdited(JSON.parse(localStorage.getItem('recentlyEditedAssignments') || '[]'));
-    };
-    window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('recentlyEditedAssignments', JSON.stringify(recentlyEdited));
-  }, [recentlyEdited]);
-
+  // Load user's assignments
   useEffect(() => {
     setLoading(true);
     fetch(`${baseUrl}/api/StudentClassAssignment/my-uploads`, { credentials: 'include' })
@@ -92,7 +89,12 @@ export default function FacultyGraderUploads() {
         return res.json();
       })
       .then(data => {
+        console.log('Raw API data:', data);
+        console.log('Number of assignments returned:', data.length);
+
+        // Filter to only show Grader positions
         const gradersOnly = data.filter(r => r.Position === 'Grader');
+        console.log('Grader assignments only:', gradersOnly.length);
 
         const mapped = gradersOnly.map(r => ({
           id: r.Id,
@@ -101,7 +103,7 @@ export default function FacultyGraderUploads() {
           asurite: r.ASUrite,
           position: r.Position,
           weeklyHours: r.WeeklyHours,
-          fultonFellow: 'No',
+          fultonFellow: 'No', // Always No for graders
           subject: r.Subject,
           catalogNum: r.CatalogNum,
           classNum: r.ClassNum,
@@ -119,9 +121,12 @@ export default function FacultyGraderUploads() {
           instructorId: r.InstructorID,
           cum_gpa: r.cum_gpa,
           cur_gpa: r.cur_gpa,
+          notes: r.Notes || '',
+          status: r.Status || '',
           isNew: false,
         }));
 
+        console.log('Mapped grader rows:', mapped.length);
         setRows(mapped);
         setError('');
       })
@@ -132,17 +137,19 @@ export default function FacultyGraderUploads() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Striped rows styling
   const getRowClassName = (params) => {
     return params.indexRelativeToCurrentPage % 2 === 0 ? 'even-row' : 'odd-row';
   };
 
+  // Add new row
   const handleAddRow = () => {
     const newId = `new-${Date.now()}`;
     const newRow = {
       id: newId,
       student_ID: '',
       asurite: '',
-      position: 'Grader',
+      position: 'Grader', // Default to Grader
       weeklyHours: '',
       fultonFellow: 'No',
       classNum: '',
@@ -169,6 +176,7 @@ export default function FacultyGraderUploads() {
     setEditingId(newId);
     setNewRowId(newId);
 
+    // Scroll to the new row so it's visible
     setTimeout(() => {
       if (apiRef.current) {
         apiRef.current.scrollToIndexes({ rowIndex: rows.length });
@@ -176,10 +184,12 @@ export default function FacultyGraderUploads() {
     }, 100);
   };
 
+  // Handle field changes with auto-population
   const handleRowUpdate = async (newRow) => {
     const oldRow = rows.find(r => r.id === newRow.id);
     let updatedRow = { ...newRow };
 
+    // Auto-fetch student details when Student_ID or ASUrite changes
     if (newRow.isNew && (newRow.student_ID !== oldRow?.student_ID || newRow.asurite !== oldRow?.asurite)) {
       const identifier = newRow.student_ID || newRow.asurite;
       if (identifier) {
@@ -197,12 +207,14 @@ export default function FacultyGraderUploads() {
             updatedRow.cum_gpa = parseFloat(student.Cumulative_GPA) || 0;
             updatedRow.cur_gpa = parseFloat(student.Current_GPA) || 0;
 
+            // Fetch session-based hours for this student
             try {
               const hoursRes = await fetch(`${baseUrl}/api/StudentClassAssignment/totalhours/${student.Student_ID}`, {
                 credentials: 'include'
               });
               if (hoursRes.ok) {
                 const sessionData = await hoursRes.json();
+                // sessionData: { hoursA, hoursB, hoursC, remainingA, remainingB, remainingC, total }
                 setStudentHoursMap(prev => ({ ...prev, [student.Student_ID]: sessionData }));
               }
             } catch (hoursErr) {
@@ -215,6 +227,7 @@ export default function FacultyGraderUploads() {
       }
     }
 
+    // Auto-fetch class details when ClassNum changes
     if (newRow.isNew && newRow.classNum !== oldRow?.classNum && newRow.classNum) {
       try {
         const res = await fetch(
@@ -251,12 +264,17 @@ export default function FacultyGraderUploads() {
     return updatedRow;
   };
 
+  // Save new row
   const handleSaveNewRow = async (rowId) => {
     const row = rows.find(r => r.id === rowId);
     if (!row) return;
 
     if (!asurite) {
-      setSnackbar({ open: true, message: 'User not authenticated', severity: 'error' });
+      setSnackbar({
+        open: true,
+        message: 'User not authenticated',
+        severity: 'error'
+      });
       return;
     }
 
@@ -269,16 +287,19 @@ export default function FacultyGraderUploads() {
       return;
     }
 
+    // Check if adding these hours would exceed the session hour cap (40 summer / 20 else)
     const sessionData = studentHoursMap[row.student_ID];
     const newHours = parseInt(row.weeklyHours, 10);
     const classSession = (row.classSession || '').toUpperCase().trim();
+    const sessionCap = sessionData?.cap || 20;
 
     if (sessionData && classSession) {
+      // Get remaining hours for the specific session (DYN counts as C)
       let remainingForSession;
       if (classSession === 'A') remainingForSession = sessionData.remainingA;
       else if (classSession === 'B') remainingForSession = sessionData.remainingB;
-      else if (classSession === 'C') remainingForSession = sessionData.remainingC;
-      else remainingForSession = 20;
+      else if (classSession === 'C' || classSession === 'DYN') remainingForSession = sessionData.remainingC;
+      else remainingForSession = sessionCap;
 
       if (newHours > remainingForSession) {
         setHoursDialog({
@@ -293,12 +314,14 @@ export default function FacultyGraderUploads() {
     }
 
     try {
+      // Get student details
       const studentRes = await fetch(`${baseUrl}/api/StudentLookup/${row.student_ID}`, {
         credentials: 'include'
       });
       if (!studentRes.ok) throw new Error('Student not found');
       const student = await studentRes.json();
 
+      // Get class details
       const classRes = await fetch(
         `${baseUrl}/api/class/details/${row.classNum}?term=${CURRENT_TERM}`,
         { credentials: 'include' }
@@ -306,13 +329,15 @@ export default function FacultyGraderUploads() {
       if (!classRes.ok) throw new Error('Class not found');
       const classData = await classRes.json();
 
-      const compensation = calculateComp('Grader', row.weeklyHours, student.Degree, 'No', classData.Session);
+      // Calculate compensation and cost center (always Grader)
+      const compensation = calculateComp('Grader', row.weeklyHours, student.Degree, 'No', classData.Session, classData.Term);
       const costCenter = computeCostCenterKey('Grader', classData.Location, classData.Campus, classData.AcadCareer, classData.Term);
 
+      // Create assignment
       const payload = {
         Student_ID: student.Student_ID,
         ASUrite: student.ASUrite,
-        Position: 'Grader',
+        Position: 'Grader', // Always Grader
         Email: student.ASU_Email_Adress,
         First_Name: student.First_Name,
         Last_Name: student.Last_Name,
@@ -326,7 +351,7 @@ export default function FacultyGraderUploads() {
         InstructorLastName: classData.InstructorLastName && classData.InstructorLastName.trim() ? classData.InstructorLastName : 'Staff TBD',
         InstructorID: classData.InstructorID && classData.InstructorID !== '' ? parseInt(classData.InstructorID, 10) : null,
         WeeklyHours: parseInt(row.weeklyHours, 10),
-        FultonFellow: 'No',
+        FultonFellow: 'No', // Always No for graders
         Location: classData.Location,
         Campus: classData.Campus,
         AcadCareer: classData.AcadCareer,
@@ -346,11 +371,13 @@ export default function FacultyGraderUploads() {
 
       if (!response.ok) throw new Error('Failed to add assignment');
 
+      // Remove from local state and reload
       setRows(prev => prev.filter(r => r.id !== rowId));
       setEditingId(null);
       setNewRowId(null);
       setSnackbar({ open: true, message: 'Assignment added successfully!', severity: 'success' });
 
+      // Reload data after 1 second
       setTimeout(() => {
         window.location.reload();
       }, 1000);
@@ -359,15 +386,21 @@ export default function FacultyGraderUploads() {
     }
   };
 
+  // Save edits to existing row
   const handleSaveEdit = async (rowId) => {
     const row = rows.find(r => r.id === rowId);
     if (!row || row.isNew) return;
 
     if (!row.asurite) {
-      setSnackbar({ open: true, message: 'Student ASUrite not found', severity: 'error' });
+      setSnackbar({
+        open: true,
+        message: 'Student ASUrite not found',
+        severity: 'error'
+      });
       return;
     }
 
+    // Check if editing hours would exceed the 20-hour limit for the class session
     const newHours = parseInt(row.weeklyHours, 10);
     const originalHours = originalEditRow ? parseInt(originalEditRow.weeklyHours, 10) || 0 : 0;
     const classSession = (row.classSession || '').toUpperCase().trim();
@@ -379,13 +412,17 @@ export default function FacultyGraderUploads() {
       });
       if (hoursRes.ok) {
         const sessionData = await hoursRes.json();
+        // sessionData: { hoursA, hoursB, hoursC, remainingA, remainingB, remainingC, cap, total }
 
+        // Get remaining for the target session (DYN counts as C)
+        const sessionCap = sessionData?.cap || 20;
         let remainingForSession;
         if (classSession === 'A') remainingForSession = sessionData.remainingA;
         else if (classSession === 'B') remainingForSession = sessionData.remainingB;
-        else if (classSession === 'C') remainingForSession = sessionData.remainingC;
-        else remainingForSession = 20;
+        else if (classSession === 'C' || classSession === 'DYN') remainingForSession = sessionData.remainingC;
+        else remainingForSession = sessionCap;
 
+        // If editing same session assignment, add back original hours to remaining
         if (classSession === originalSession) {
           remainingForSession += originalHours;
         }
@@ -403,14 +440,15 @@ export default function FacultyGraderUploads() {
       }
     } catch (hoursErr) {
       console.error('Failed to validate hours:', hoursErr);
+      // Continue with save if validation fails - let backend handle it
     }
 
     try {
       const payload = {
-        Position: 'Grader',
+        Position: 'Grader', // Always Grader
         WeeklyHours: parseInt(row.weeklyHours, 10),
         ClassNum: row.classNum,
-        ImportedBy: asurite,
+        ImportedBy: asurite, // Preserve ImportedBy so row stays in my-uploads filter
       };
 
       const response = await fetch(`${baseUrl}/api/StudentClassAssignment/bulk-edit`, {
@@ -429,11 +467,13 @@ export default function FacultyGraderUploads() {
       const result = await response.json();
 
       setEditingId(null);
-      setOriginalEditRow(null);
+      setOriginalEditRow(null); // Clear original row data
 
+      // Track recently edited rows for highlighting (persists until Reviewed checkbox in MasterDashboard)
       if (result.updated && result.updated.length > 0) {
         const updatedAssignment = result.updated[0];
 
+        // Update the row with fresh data from backend (includes new Subject, CatalogNum, etc. if ClassNum changed)
         setRows(prev =>
           prev.map(r =>
             r.id === rowId
@@ -455,21 +495,6 @@ export default function FacultyGraderUploads() {
           )
         );
 
-        const normalized = result.updated.map(r => {
-          const fieldNameMap = {
-            'Position': 'position',
-            'WeeklyHours': 'weeklyHours',
-            'ClassNum': 'classNum',
-            'FultonFellow': 'fultonFellow',
-          };
-          const normalizedFields = (r.changed_fields || []).map(f => fieldNameMap[f] || f.toLowerCase());
-          return {
-            ...r,
-            id: r.Id,
-            changed_fields: normalizedFields,
-          };
-        });
-        setRecentlyEdited(normalized);
       }
 
       setSnackbar({ open: true, message: 'Changes saved!', severity: 'success' });
@@ -478,22 +503,26 @@ export default function FacultyGraderUploads() {
     }
   };
 
+  // Cancel editing
   const handleCancelEdit = () => {
     if (newRowId) {
       setRows(prev => prev.filter(r => r.id !== newRowId));
       setNewRowId(null);
     }
     setEditingId(null);
-    setOriginalEditRow(null);
+    setOriginalEditRow(null); // Clear original row data
   };
 
+  // Open delete confirmation dialog
   const handleDeleteClick = (row) => {
     setRowToDelete(row);
     setDeleteDialogOpen(true);
   };
 
+  // Confirm and delete row
   const handleConfirmDelete = async () => {
     if (!rowToDelete || rowToDelete.isNew) {
+      // If new row, just remove from local state
       setRows(prev => prev.filter(r => r.id !== rowToDelete.id));
       setDeleteDialogOpen(false);
       setRowToDelete(null);
@@ -515,6 +544,7 @@ export default function FacultyGraderUploads() {
 
       if (!response.ok) throw new Error('Delete failed');
 
+      // Remove from local state
       setRows(prev => prev.filter(r => r.id !== rowToDelete.id));
       setDeleteDialogOpen(false);
       setRowToDelete(null);
@@ -524,18 +554,15 @@ export default function FacultyGraderUploads() {
     }
   };
 
+  // Mark non-editable fields
   const getCellClassName = (params) => {
     if ((params.field === 'student_ID' || params.field === 'asurite') && !params.row.isNew) {
       return 'readonly-cell';
     }
-
-    const edited = recentlyEdited.find(r => r.id === params.row.id);
-    if (edited && edited.changed_fields && edited.changed_fields.includes(params.field)) {
-      return 'highlight-cell';
-    }
     return '';
   };
 
+  // Columns
   const columns = [
     { field: 'studentName', headerName: 'Student Name', headerAlign: 'center', width: 150, cellClassName: 'readonly-cell' },
     {
@@ -543,14 +570,14 @@ export default function FacultyGraderUploads() {
       headerName: 'Student ID',
       headerAlign: 'center',
       width: 120,
-      editable: (params) => params.row.isNew
+      editable: (params) => params.row.isNew // Only editable when adding new
     },
     {
       field: 'asurite',
       headerName: 'ASUrite',
       headerAlign: 'center',
       width: 110,
-      editable: (params) => params.row.isNew
+      editable: (params) => params.row.isNew // Only editable when adding new
     },
     { field: 'educationLevel', headerName: 'Education', headerAlign: 'center', width: 110, cellClassName: 'readonly-cell' },
     {
@@ -560,7 +587,7 @@ export default function FacultyGraderUploads() {
       width: 150,
       editable: false,
       cellClassName: 'readonly-cell',
-      valueGetter: () => 'Grader',
+      valueGetter: () => 'Grader', // Always Grader
     },
     {
       field: 'weeklyHours',
@@ -568,7 +595,7 @@ export default function FacultyGraderUploads() {
       headerAlign: 'center',
       width: 100,
       type: 'singleSelect',
-      valueOptions: HOURS,
+      valueOptions: String(CURRENT_TERM).endsWith('4') ? HOURS_SUMMER : HOURS,
       editable: true,
     },
     {
@@ -592,6 +619,8 @@ export default function FacultyGraderUploads() {
     { field: 'catalogNum', headerName: 'Catalog #', headerAlign: 'center', width: 100, type: 'number', cellClassName: 'readonly-cell' },
     { field: 'classSession', headerName: 'Session', headerAlign: 'center', width: 100, cellClassName: 'readonly-cell' },
     { field: 'instructorName', headerName: 'Instructor Name', headerAlign: 'center', flex: 1, minWidth: 150, maxWidth: 250, cellClassName: 'readonly-cell' },
+    { field: 'notes', headerName: 'Notes', headerAlign: 'center', flex: 1.5, minWidth: 150, cellClassName: 'readonly-cell' },
+    { field: 'status', headerName: 'Status', headerAlign: 'center', flex: 1, minWidth: 100, cellClassName: 'readonly-cell' },
     {
       field: 'actions',
       headerName: 'Actions',
@@ -627,7 +656,7 @@ export default function FacultyGraderUploads() {
               <EditIcon
                 onClick={() => {
                   setEditingId(params.row.id);
-                  setOriginalEditRow({ ...params.row });
+                  setOriginalEditRow({ ...params.row }); // Store original row for hours comparison
                 }}
                 sx={{ cursor: 'pointer', color: 'blue' }}
                 title="Edit"
@@ -644,6 +673,7 @@ export default function FacultyGraderUploads() {
     },
   ];
 
+  // Check access via permission system
   if (!perms?.faculty_grader_uploads) {
     return (
       <Paper style={{ padding: 16, margin: 20 }}>
@@ -698,6 +728,7 @@ export default function FacultyGraderUploads() {
           getRowClassName={getRowClassName}
           getCellClassName={getCellClassName}
           isCellEditable={(params) => {
+            // Prevent editing Student ID and ASUrite for existing rows
             if ((params.field === 'student_ID' || params.field === 'asurite') && !params.row.isNew) {
               return false;
             }
@@ -718,6 +749,7 @@ export default function FacultyGraderUploads() {
         </Button>
       </Box>
 
+      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
@@ -740,6 +772,7 @@ export default function FacultyGraderUploads() {
         </Alert>
       </Snackbar>
 
+      {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <DialogTitle>Delete Assignment</DialogTitle>
         <DialogContent>
@@ -755,6 +788,7 @@ export default function FacultyGraderUploads() {
         </DialogActions>
       </Dialog>
 
+      {/* Hours Validation Dialog */}
       <Dialog
         open={hoursDialog.open}
         onClose={() => setHoursDialog({ ...hoursDialog, open: false })}
@@ -780,7 +814,8 @@ export default function FacultyGraderUploads() {
                   { label: 'Session B', remaining: hoursDialog.sessionData.remainingB, subtitle: 'Second Half' },
                   { label: 'Session C', remaining: hoursDialog.sessionData.remainingC, subtitle: 'Full Semester' },
                 ].map((session) => {
-                  const colors = getSessionColor(session.remaining);
+                  const dlgCap = hoursDialog.sessionData?.cap || 20;
+                  const colors = getSessionColor(session.remaining, dlgCap);
                   const isTarget = session.label.slice(-1) === hoursDialog.targetSession;
                   return (
                     <Card
@@ -802,7 +837,7 @@ export default function FacultyGraderUploads() {
                         </Typography>
                         <LinearProgress
                           variant="determinate"
-                          value={getProgressValue(session.remaining)}
+                          value={getProgressValue(session.remaining, dlgCap)}
                           sx={{
                             height: 5,
                             borderRadius: 3,

@@ -33,10 +33,12 @@ export default function FacultyQuickAssign() {
     setFormResetKey(prev => prev + 1);
   };
 
+  // Check if any session has remaining hours
   const hasRemainingHours = sessionHours && (
     sessionHours.remainingA > 0 || sessionHours.remainingB > 0 || sessionHours.remainingC > 0
   );
 
+  // Determine active step
   const activeStep = studentData && hasRemainingHours && classDetails ? 2
     : studentData && hasRemainingHours ? 1
     : 0;
