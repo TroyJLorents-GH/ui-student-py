@@ -85,6 +85,14 @@ export default function Login() {
           >
             Login as Admin
           </button>
+          <button
+            onClick={() => impersonate('demo_hr')}
+            disabled={busy}
+            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: 'none',
+              background: '#8c1d40', color: '#fff', fontWeight: 600, cursor: 'pointer', opacity: busy ? 0.7 : 1 }}
+          >
+            Login as HR
+          </button>
         </div>
 
         <div style={{ marginTop: 16 }}>
