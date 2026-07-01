@@ -25,7 +25,9 @@ const ENDPOINTS = {
 
 export default function ApplicationList() {
   const theme = useTheme();
-  const dataGridSx = useMemo(() => getDataGridSx(theme), [theme]);
+  // Applications grid uses navy headers (matches navbar) instead of the default maroon.
+  const HEADER_BLUE = { main: '#1d498c', dark: '#15396e', contrastText: '#ffffff' };
+  const dataGridSx = useMemo(() => getDataGridSx(theme, HEADER_BLUE), [theme]);
 
   const [appType, setAppType] = useState('Masters'); // 'Masters' | 'PhD'
   const [rows, setRows] = useState([]);
@@ -57,6 +59,12 @@ export default function ApplicationList() {
         const normalized = data.map((d) => ({
           ...d,
           ProgrammingLanguages: d.ProgrammingLanguages ?? d.ProgrammingLanguage ?? '',
+          // Grid columns use ASU_ID / ASUEmail; the Masters DTO returns
+          // ASU10DigitID / YourASUEmailAddress. Map both so the columns render.
+          ASU_ID: d.ASU_ID ?? d.ASU10DigitID ?? '',
+          ASUEmail: d.ASUEmail ?? d.YourASUEmailAddress ?? '',
+          TASpeakTestScore: d.TASpeakTestScore ?? d.TASpeakTestScoreOrIBT ?? '',
+          ThesisProposalStatus: d.ThesisProposalStatus ?? d.DissertationProposalStatus ?? '',
           AppType: appType,
           FullName: d.FirstName && d.LastName ? `${d.FirstName} ${d.LastName}` : d.Name ?? '',
         }));
