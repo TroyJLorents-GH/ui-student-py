@@ -75,7 +75,7 @@ export default function Home() {
               '&:hover': { backgroundColor: '#701831' },
             }}
           >
-            {USE_CAS ? 'Sign in with ASU CAS' : (USE_MOCK ? 'Dev Login (Mock)' : 'Dev Login')}
+            {USE_CAS ? 'Sign in with SSO' : (USE_MOCK ? 'Sign In (Mock)' : 'Sign In')}
           </Button>
         </Paper>
       )}

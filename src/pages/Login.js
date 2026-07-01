@@ -54,7 +54,7 @@ export default function Login() {
     <div style={{ display: 'grid', placeItems: 'center', minHeight: '70vh' }}>
       <div style={{ width: 420, padding: 24, borderRadius: 12, background: '#fff',
         boxShadow: '0 6px 20px rgba(0,0,0,0.08)', textAlign: 'center' }}>
-        <h2 style={{ marginTop: 0 }}>Sign in (Dev)</h2>
+        <h2 style={{ marginTop: 0 }}>Sign In</h2>
 
         <p style={{ marginTop: -8, color: '#555' }}>
           {asurite ? <>Currently signed in as <b>{asurite}</b></> : <>You’re not signed in.</>}
