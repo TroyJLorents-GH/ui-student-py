@@ -23,10 +23,12 @@ const ENDPOINTS = {
   PhD: `${baseUrl}/api/PhdApplication`,
 };
 
+// Applications grid uses navy headers (matches navbar) instead of the default maroon.
+// Module-scope constant so its reference is stable (keeps useMemo deps clean).
+const HEADER_BLUE = { main: '#1d498c', dark: '#15396e', contrastText: '#ffffff' };
+
 export default function ApplicationList() {
   const theme = useTheme();
-  // Applications grid uses navy headers (matches navbar) instead of the default maroon.
-  const HEADER_BLUE = { main: '#1d498c', dark: '#15396e', contrastText: '#ffffff' };
   const dataGridSx = useMemo(() => getDataGridSx(theme, HEADER_BLUE), [theme]);
 
   const [appType, setAppType] = useState('Masters'); // 'Masters' | 'PhD'
