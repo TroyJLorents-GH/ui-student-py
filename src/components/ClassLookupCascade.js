@@ -142,7 +142,7 @@ const ClassLookupCascade = ({ setClassDetails }) => {
               onChange={(e) => setSelectedTerm(e.target.value)}
             >
               <MenuItem value=""><em>Select Term</em></MenuItem>
-              <MenuItem value="2264">Summer 2026</MenuItem>
+              <MenuItem value="2261">Summer 2026</MenuItem>
             </Select>
           </FormControl>
         </Grid>

@@ -13,4 +13,11 @@ module.exports = {
       return config;
     },
   },
+  // With package.json `proxy` set and no HOST env, react-scripts derives
+  // allowedHosts: [undefined], which webpack-dev-server v4 rejects
+  // ("allowedHosts[0] should be a non-empty string"). Force 'all' for local dev.
+  devServer: (devServerConfig) => {
+    devServerConfig.allowedHosts = 'all';
+    return devServerConfig;
+  },
 };

@@ -15,7 +15,7 @@ import DeleteIcon from "@mui/icons-material/DeleteOutlined";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Close";
 
-const ACTIVE_TERM = '2264';
+const ACTIVE_TERM = '2261';
 const HOUR_CAP = String(ACTIVE_TERM).endsWith('4') ? 40 : 20;
 
 // Helper function to get color based on remaining hours (cap-aware)

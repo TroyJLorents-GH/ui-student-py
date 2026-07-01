@@ -1,12 +1,14 @@
 // Important faculty/staff dates rendered on Home page Event Calendar.
 // Edit dates here each term — no DB change needed.
-// @mui/x-scheduler v9 (beta) requires start/end as JS Date objects (NOT strings),
-// each event needs id + title + start + end. For all-day events set allDay:true.
-// new Date(year, monthIndex, day) — monthIndex is 0-based (Jan=0 ... Dec=11).
+// @mui/x-scheduler v9 (beta.1) requires start/end as ISO wall-time STRINGS
+// (e.g. "2026-08-20T00:00:00"), NOT JS Date objects. A string without a
+// trailing "Z" is treated as wall-time in the event's timezone/"default".
+// Each event needs id + title + start + end. For all-day events set allDay:true
+// and span the whole day (T00:00:00 -> T23:59:59).
 // Resource colors palette: red | pink | purple | indigo | blue | teal | green | lime | amber | orange | grey
 
 export const EVENT_CALENDAR_RESOURCES = [
-  { id: 'asu-cal',       title: 'ASU Academic Calendar', eventColor: 'red' },
+  { id: 'asu-cal',       title: 'Academic Calendar', eventColor: 'red' },
   { id: 'app-deadlines', title: 'Application Deadlines', eventColor: 'blue' },
   { id: 'ta-recommendations', title: 'TA Recommendations', eventColor: 'green' },
   { id: 'sessions',      title: 'Summer Sessions A / B / C',    eventColor: 'amber' },
@@ -19,8 +21,8 @@ export const EVENT_CALENDAR_EVENTS = [
   {
     id: 'fall-2026-classes-begin',
     title: 'Fall 2026 Classes Begin',
-    start: new Date(2026, 7, 20),
-    end: new Date(2026, 7, 20),
+    start: '2026-08-20T00:00:00',
+    end: '2026-08-20T23:59:59',
     allDay: true,
     resource: 'asu-cal',
   },
@@ -28,16 +30,16 @@ export const EVENT_CALENDAR_EVENTS = [
   {
     id: 'fall-2026-ta-recommendations-start',
     title: 'Fall 2026 TA Recommendations Start',
-    start: new Date(2026, 5, 2),
-    end: new Date(2026, 5, 2),
+    start: '2026-06-02T00:00:00',
+    end: '2026-06-02T23:59:59',
     allDay: true,
     resource: 'ta-recommendations',
   },
   {
     id: 'fall-2026-ta-recommendations-end',
     title: 'Fall 2026 TA Recommendations End',
-    start: new Date(2026, 5, 30),
-    end: new Date(2026, 5, 30),
+    start: '2026-06-30T00:00:00',
+    end: '2026-06-30T23:59:59',
     allDay: true,
     resource: 'ta-recommendations',
   },
@@ -46,16 +48,16 @@ export const EVENT_CALENDAR_EVENTS = [
   {
     id: 'fall-2026-masters-phd-apps-live',
     title: 'Masters and PhD Fall 2026 Applications Live',
-    start: new Date(2026, 5, 3),
-    end: new Date(2026, 5, 3),
+    start: '2026-06-03T00:00:00',
+    end: '2026-06-03T23:59:59',
     allDay: true,
     resource: 'applications',
   },
   {
     id: 'fall-2026-app-close',
     title: 'Student Applications Close — Fall 2026',
-    start: new Date(2026, 6, 15),
-    end: new Date(2026, 6, 15),
+    start: '2026-07-15T00:00:00',
+    end: '2026-07-15T23:59:59',
     allDay: true,
     resource: 'app-deadlines',
   },
@@ -64,24 +66,24 @@ export const EVENT_CALENDAR_EVENTS = [
   {
     id: 'summer-2026-session-c-start',
     title: 'Summer Session C Starts',
-    start: new Date(2026, 4, 18),
-    end: new Date(2026, 4, 18),
+    start: '2026-05-18T00:00:00',
+    end: '2026-05-18T23:59:59',
     allDay: true,
     resource: 'sessions',
   },
   {
     id: 'summer-2026-session-a-start',
     title: 'Summer Session A Starts',
-    start: new Date(2026, 4, 18),
-    end: new Date(2026, 4, 18),
+    start: '2026-05-18T00:00:00',
+    end: '2026-05-18T23:59:59',
     allDay: true,
     resource: 'sessions',
   },
   {
     id: 'summer-2026-session-b-start',
     title: 'Summer Session B Starts',
-    start: new Date(2026, 5, 29),
-    end: new Date(2026, 5, 29),
+    start: '2026-06-29T00:00:00',
+    end: '2026-06-29T23:59:59',
     allDay: true,
     resource: 'sessions',
   },

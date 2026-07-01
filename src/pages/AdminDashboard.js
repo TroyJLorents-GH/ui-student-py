@@ -100,6 +100,7 @@ export default function AdminDashboard() {
     try {
       const response = await fetch(`${baseUrl}/api/StudentClassAssignment/${newRow.id}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           Position_Number: newRow.position_Number,
@@ -126,7 +127,7 @@ export default function AdminDashboard() {
   // Load data from API - using admin endpoint
   useEffect(() => {
     setLoading(true);
-    fetch(`${baseUrl}/api/StudentClassAssignment/admin`)
+    fetch(`${baseUrl}/api/StudentClassAssignment/admin`, { credentials: 'include' })
       .then(res => {
         if (!res.ok) throw new Error('Failed to load assignments');
         return res.json();

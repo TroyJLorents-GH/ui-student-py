@@ -161,10 +161,11 @@ export function CustomToolbarFull() {
  * Returns theme-aware sx styles for DataGridPro with maroon headers and striped rows.
  * @param {object} theme - MUI theme object from useTheme()
  */
-export function getDataGridSx(theme) {
-  const primary = theme.palette.primary.main;
-  const primaryDark = theme.palette.primary.dark;
-  const white = theme.palette.primary.contrastText;
+export function getDataGridSx(theme, headerPalette) {
+  const pal = headerPalette || theme.palette.primary;
+  const primary = pal.main;
+  const primaryDark = pal.dark || pal.main;
+  const white = pal.contrastText || theme.palette.primary.contrastText;
 
   return {
     '& .MuiDataGrid-toolbar': { justifyContent: 'flex-start' },

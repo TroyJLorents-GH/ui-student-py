@@ -51,7 +51,7 @@ export default function ApplicationList() {
       try {
         // Application term — decoupled from .env ACTIVE_TERM so faculty only see
         // the current recruiting term. Bump this when the next term goes live.
-        const r = await fetch(`${ENDPOINTS[appType]}?term=2267`);
+        const r = await fetch(`${ENDPOINTS[appType]}?term=2261`);
         if (!r.ok) throw new Error(`Failed to fetch ${appType} applications`);
         const data = await r.json();
 

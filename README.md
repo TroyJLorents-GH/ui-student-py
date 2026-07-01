@@ -1,3 +1,8 @@
+---
+project: projects/ui-student-py
+type: readme
+---
+
 # Student Hiring System – Frontend (React + FastAPI)
 
 ![Azure](https://img.shields.io/badge/hosted%20on-Azure_Static_Web_Apps-blue)

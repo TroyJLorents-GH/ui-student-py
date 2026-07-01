@@ -43,14 +43,14 @@ export default function Home() {
           Student Assignment Management System (SAMS)
         </Typography>
         <Typography variant="body1" sx={{ mt: 1.5, color: 'text.secondary' }}>
-          SAMS streamlines how SCAI faculty and staff review applicants, create TA/Grader/IA assignments,
+          SAMS streamlines how University faculty and staff review applicants, create TA/Grader/IA assignments,
           and manage student workloads.
         </Typography>
 
         {/* Only show the dev note if NOT using CAS */}
         {!USE_CAS && (
           <Typography variant="body2" sx={{ mt: 0.5, color: 'text.secondary' }}>
-            Login is currently using a development flow and will be replaced with ASU CAS Single Sign-On (SSO).
+            Login is currently using a development flow and will be replaced with CAS Single Sign-On (SSO).
           </Typography>
         )}
       </Box>
